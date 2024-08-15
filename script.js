@@ -19,6 +19,7 @@ const addUserForm = document.getElementById('addUserForm');
 const saveNewUserBtn = document.getElementById('saveNewUserBtn');
 const totalsElement = document.getElementById('totals');
 const remainingElement = document.getElementById('remaining');
+const actionsColumn = document.getElementById('actionsColumn');
 
 // Global variables
 let currentUser = '';
@@ -227,7 +228,7 @@ function viewProject(projectId) {
         loadExpenses(projectId);
         updateProjectSummary(projectId);
         
-        // Show/hide buttons based on user role
+        // Show/hide buttons and actions column based on user role
         if (currentUserRole === 'collaborator' || currentUserRole === 'admin') {
             addExpenseBtn.classList.remove('hidden');
         } else {
@@ -237,9 +238,11 @@ function viewProject(projectId) {
         if (currentUserRole === 'admin') {
             addUserBtn.classList.remove('hidden');
             backToDashboardBtn.classList.remove('hidden');
+            actionsColumn.classList.remove('hidden');
         } else {
             addUserBtn.classList.add('hidden');
             backToDashboardBtn.classList.add('hidden');
+            actionsColumn.classList.add('hidden');
         }
     }
 }
