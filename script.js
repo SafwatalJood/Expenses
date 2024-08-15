@@ -276,6 +276,7 @@ function loadExpenses(projectId) {
     updateProjectSummary(projectId);
 }
 
+// Function to save expense
 function saveExpense() {
     console.log('Attempting to save expense');
     if (currentUserRole !== 'admin' && currentUserRole !== 'collaborator') {
@@ -283,40 +284,49 @@ function saveExpense() {
         return;
     }
     
-    const descriptionElement = document.getElementById('expenseDescription');
-    const amountElement = document.getElementById('expenseAmount');
-    const dateElement = document.getElementById('expenseDate');
-    const typeElement = document.getElementById('expenseType');
-    const paymentMethodElement = document.getElementById('paymentMethod');
-    const vatElement = document.getElementById('expenseVAT');
+    const formElements = [
+        {id: 'expenseDescription', name: 'الوصف'},
+        {id: 'expenseAmount', name: 'المبلغ'},
+        {id: 'expenseDate', name: 'التاريخ'},
+        {id: 'expenseType', name: 'النوع'},
+        {id: 'paymentMethod', name: 'طريقة الدفع'},
+        {id: 'expenseVAT', name: 'ضريبة القيمة المضافة'}
+    ];
 
-    if (!descriptionElement || !amountElement || !dateElement || !typeElement || !paymentMethodElement) {
-        console.error('One or more form elements are missing');
-        alert('حدث خطأ في النموذج. يرجى المحاولة مرة أخرى أو الاتصال بمسؤول النظام.');
+    const missingElements = [];
+    const elementValues = {};
+
+    formElements.forEach(element => {
+        const el = document.getElementById(element.id);
+        if (!el) {
+            missingElements.push(element.name);
+        } else {
+            elementValues[element.id] = el.value;
+        }
+    });
+
+    if (missingElements.length > 0) {
+        console.error('Missing form elements:', missingElements.join(', '));
+        alert(`حدث خطأ في النموذج. العناصر المفقودة: ${missingElements.join(', ')}`);
         return;
     }
 
-    const description = descriptionElement.value;
-    const amount = amountElement.value;
-    const date = dateElement.value;
-    const type = typeElement.value;
-    const paymentMethod = paymentMethodElement.value;
-    const vat = vatElement ? vatElement.value : null;
+    console.log('Form element values:', elementValues);
 
-    if (!description || !amount || !date) {
-        alert('الرجاء إدخال جميع بيانات المصروف');
+    if (!elementValues.expenseDescription || !elementValues.expenseAmount || !elementValues.expenseDate) {
+        alert('الرجاء إدخال جميع البيانات المطلوبة');
         return;
     }
 
     const expenses = JSON.parse(localStorage.getItem(`expenses_${currentProjectId}`)) || [];
     const newExpense = {
         id: Date.now().toString(),
-        description,
-        amount: parseFloat(amount),
-        date,
-        type,
-        paymentMethod,
-        vat: vat ? parseFloat(vat) : null,
+        description: elementValues.expenseDescription,
+        amount: parseFloat(elementValues.expenseAmount),
+        date: elementValues.expenseDate,
+        type: elementValues.expenseType,
+        paymentMethod: elementValues.paymentMethod,
+        vat: elementValues.expenseVAT ? parseFloat(elementValues.expenseVAT) : null,
         addedBy: currentUser
     };
     expenses.push(newExpense);
@@ -421,7 +431,11 @@ if (saveProjectBtn) {
     saveProjectBtn.addEventListener('click', saveProject);
 }
 if (addExpenseBtn) {
-    addExpenseBtn.addEventListener('click', () => expenseForm.classList.remove('hidden'));
+    addExpenseBtn.addEventListener('click', () => {
+        console.log('Add Expense button clicked');
+        expenseForm.classList.remove('hidden');
+        console.log('Expense form visibility:', !expenseForm.classList.contains('hidden'));
+    });
 }
 if (saveExpenseBtn) {
     saveExpenseBtn.addEventListener('click', saveExpense);
