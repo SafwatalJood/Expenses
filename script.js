@@ -26,6 +26,7 @@ let currentUser = '';
 let currentProjectId = '';
 let currentUserRole = '';
 let expenses = [];
+let editingExpenseId = null; // New variable to track the ID of the expense being edited
 
 // Functions
 function handleLogin(e) {
@@ -279,7 +280,7 @@ function loadExpenses(projectId) {
     updateProjectSummary(projectId);
 }
 
-// Function to save expense
+// Function to save or edit an expense
 function saveExpense() {
     console.log('Attempting to save expense');
     if (currentUserRole !== 'admin' && currentUserRole !== 'collaborator') {
@@ -322,22 +323,66 @@ function saveExpense() {
     }
 
     const expenses = JSON.parse(localStorage.getItem(`expenses_${currentProjectId}`)) || [];
-    const newExpense = {
-        id: Date.now().toString(),
-        description: elementValues.expenseDescription,
-        amount: parseFloat(elementValues.expenseAmount),
-        date: elementValues.expenseDate,
-        type: elementValues.expenseType,
-        paymentMethod: elementValues.paymentMethod,
-        vat: elementValues.expenseVAT ? parseFloat(elementValues.expenseVAT) : null,
-        addedBy: currentUser
-    };
-    expenses.push(newExpense);
+
+    if (editingExpenseId) {
+        // Edit existing expense
+        const expenseIndex = expenses.findIndex(expense => expense.id === editingExpenseId);
+        if (expenseIndex > -1) {
+            expenses[expenseIndex] = {
+                id: editingExpenseId,
+                description: elementValues.expenseDescription,
+                amount: parseFloat(elementValues.expenseAmount),
+                date: elementValues.expenseDate,
+                type: elementValues.expenseType,
+                paymentMethod: elementValues.paymentMethod,
+                vat: elementValues.expenseVAT ? parseFloat(elementValues.expenseVAT) : null,
+                addedBy: currentUser
+            };
+            console.log('Expense edited successfully');
+        }
+        editingExpenseId = null; // Reset the editing ID
+    } else {
+        // Add new expense
+        const newExpense = {
+            id: Date.now().toString(),
+            description: elementValues.expenseDescription,
+            amount: parseFloat(elementValues.expenseAmount),
+            date: elementValues.expenseDate,
+            type: elementValues.expenseType,
+            paymentMethod: elementValues.paymentMethod,
+            vat: elementValues.expenseVAT ? parseFloat(elementValues.expenseVAT) : null,
+            addedBy: currentUser
+        };
+        expenses.push(newExpense);
+        console.log('Expense saved successfully');
+    }
+
     localStorage.setItem(`expenses_${currentProjectId}`, JSON.stringify(expenses));
 
     expenseForm.classList.add('hidden');
     loadExpenses(currentProjectId);
-    console.log('Expense saved successfully');
+}
+
+function editExpense(projectId, expenseId) {
+    console.log('Editing expense:', expenseId);
+    const expenses = JSON.parse(localStorage.getItem(`expenses_${projectId}`)) || [];
+    const expense = expenses.find(expense => expense.id === expenseId);
+
+    if (expense) {
+        // Load the expense details into the form
+        document.getElementById('expenseDescription').value = expense.description;
+        document.getElementById('expenseAmount').value = expense.amount;
+        document.getElementById('expenseDate').value = expense.date;
+        document.getElementById('expenseType').value = expense.type;
+        document.getElementById('paymentMethod').value = expense.paymentMethod;
+        document.getElementById('expenseVAT').value = expense.vat || '';
+
+        // Show the form and set the editing ID
+        expenseForm.classList.remove('hidden');
+        editingExpenseId = expenseId;
+    } else {
+        console.error('Expense not found');
+    }
 }
 
 function updateProjectSummary(projectId) {
