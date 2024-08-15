@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفوة الجود للمقاولات - متتبع المصروفات</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <img src="logo.png" alt="شعار صفوة الجود" class="logo">
+        <h1 class="business-name">صفوة الجود للمقاولات</h1>
+        <h2 class="page-title">متتبع المصروفات</h2>
+
+        <main>
+            <section id="loginSection" class="section">
+                <h3>تسجيل الدخول</h3>
+                <form id="loginForm">
+                    <input type="text" id="username" placeholder="اسم المستخدم" required>
+                    <button type="submit">دخول</button>
+                </form>
+            </section>
+
+            <section id="dashboard" class="section hidden">
+                <h3>لوحة التحكم</h3>
+                <div id="projectsList"></div>
+                <button id="addProjectBtn">إضافة مشروع جديد</button>
+                <div id="projectForm" class="hidden">
+                    <input type="text" id="projectName" placeholder="اسم المشروع" required>
+                    <input type="text" id="projectUser" placeholder="اسم المستخدم" required>
+                    <select id="projectUserRole">
+                        <option value="collaborator">متعاون</option>
+                        <option value="supervisor">مراقب</option>
+                    </select>
+                    <button id="saveProjectBtn">حفظ المشروع</button>
+                </div>
+                <button id="logoutBtn">تسجيل الخروج</button>
+            </section>
+
+            <section id="projectPage" class="section hidden">
+                <h3 id="projectTitle"></h3>
+                <div id="expensesList"></div>
+                <table id="expenseTable">
+                    <thead>
+                        <tr>
+                            <th>الوصف</th>
+                            <th>المبلغ</th>
+                            <th>النوع</th>
+                            <th>التاريخ</th>
+                            <th>طريقة الدفع</th>
+                            <th>أضيف بواسطة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Expense rows will be added here dynamically -->
+                    </tbody>
+                </table>
+                <div id="summary">
+                    <p id="totals"></p>
+                    <p id="remaining"></p>
+                </div>
+                <button id="addExpenseBtn">إضافة مصروف جديد</button>
+                <button id="addUserBtn">إضافة مستخدم للمشروع</button>
+                <div id="expenseForm" class="hidden">
+                    <input type="text" id="expenseDescription" placeholder="وصف المصروف" required>
+                    <input type="number" id="expenseAmount" placeholder="المبلغ" required>
+                    <input type="date" id="expenseDate" required>
+                    <select id="expenseType">
+                        <option value="expense">مصروف</option>
+                        <option value="deposit">إيداع</option>
+                    </select>
+                    <input type="number" id="expenseVAT" placeholder="ضريبة القيمة المضافة (اختياري)">
+                    <button id="saveExpenseBtn">حفظ المصروف</button>
+                </div>
+                <div id="addUserForm" class="hidden">
+                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم" required>
+                    <select id="newProjectUserRole">
+                        <option value="collaborator">متعاون</option>
+                        <option value="supervisor">مراقب</option>
+                    </select>
+                    <button id="saveNewUserBtn">إضافة المستخدم</button>
+                </div>
+                <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    direction: rtl;
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.logo {
+    max-width: 300px;
+    display: block;
+    margin: 0 auto 20px;
+}
+
+.business-name {
+    color: #C0A062;
+    text-align: center;
+    font-size: 1.8em;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(74, 74, 74, 0.3);
+}
+
+.page-title {
+    color: #333;
+    text-align: center;
+    font-size: 2.2em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    margin-top: 15px;
+    margin-bottom: 25px;
+}
+
+input, select, button {
+    margin-bottom: 12px;
+    padding: 12px;
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+    border: 1px solid #C0A062;
+}
+
+button {
+    background-color: #C0A062;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #A88B4E;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+.hidden {
+    display: none;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #C0A062;
+    padding: 10px;
+    text-align: right;
+}
+
+th {
+    background-color: #f2f2f2;
+    color: #333;
+}
+
+#summary {
+    margin-top: 20px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#totals {
+    color: #0275d8;
+}
+
+#remaining {
+    color: #d9534f;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+    .container {
+        padding: 15px;
+    }
+    .page-title {
+        font-size: 1.8em;
+    }
+    .business-name {
+        font-size: 1.5em;
+    }
+    .logo {
+        max-width: 250px;
+    }
+    input, select, button {
+        max-width: 100%;
+    }
+}
