@@ -228,20 +228,17 @@ function viewProject(projectId) {
         updateProjectSummary(projectId);
         
         // Show/hide buttons based on user role
-        if (currentUserRole === 'collaborator') {
+        if (currentUserRole === 'collaborator' || currentUserRole === 'admin') {
             addExpenseBtn.classList.remove('hidden');
-            addUserBtn.classList.add('hidden');
-        } else if (currentUserRole === 'supervisor' || currentUserRole === 'watcher') {
+        } else {
             addExpenseBtn.classList.add('hidden');
-            addUserBtn.classList.add('hidden');
-        } else if (currentUserRole === 'admin') {
-            addExpenseBtn.classList.remove('hidden');
-            addUserBtn.classList.remove('hidden');
         }
-        
+
         if (currentUserRole === 'admin') {
+            addUserBtn.classList.remove('hidden');
             backToDashboardBtn.classList.remove('hidden');
         } else {
+            addUserBtn.classList.add('hidden');
             backToDashboardBtn.classList.add('hidden');
         }
     }
@@ -280,16 +277,31 @@ function loadExpenses(projectId) {
 }
 
 function saveExpense() {
+    console.log('Attempting to save expense');
     if (currentUserRole !== 'admin' && currentUserRole !== 'collaborator') {
         alert('ليس لديك صلاحية لإضافة مصروف');
         return;
     }
-    const description = document.getElementById('expenseDescription').value;
-    const amount = document.getElementById('expenseAmount').value;
-    const date = document.getElementById('expenseDate').value;
-    const type = document.getElementById('expenseType').value;
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    const vat = document.getElementById('expenseVAT').value;
+    
+    const descriptionElement = document.getElementById('expenseDescription');
+    const amountElement = document.getElementById('expenseAmount');
+    const dateElement = document.getElementById('expenseDate');
+    const typeElement = document.getElementById('expenseType');
+    const paymentMethodElement = document.getElementById('paymentMethod');
+    const vatElement = document.getElementById('expenseVAT');
+
+    if (!descriptionElement || !amountElement || !dateElement || !typeElement || !paymentMethodElement) {
+        console.error('One or more form elements are missing');
+        alert('حدث خطأ في النموذج. يرجى المحاولة مرة أخرى أو الاتصال بمسؤول النظام.');
+        return;
+    }
+
+    const description = descriptionElement.value;
+    const amount = amountElement.value;
+    const date = dateElement.value;
+    const type = typeElement.value;
+    const paymentMethod = paymentMethodElement.value;
+    const vat = vatElement ? vatElement.value : null;
 
     if (!description || !amount || !date) {
         alert('الرجاء إدخال جميع بيانات المصروف');
@@ -312,6 +324,7 @@ function saveExpense() {
 
     expenseForm.classList.add('hidden');
     loadExpenses(currentProjectId);
+    console.log('Expense saved successfully');
 }
 
 function updateProjectSummary(projectId) {
