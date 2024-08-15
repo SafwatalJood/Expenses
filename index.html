@@ -14,6 +14,9 @@
 
         <h2 id="متتبع-المصروفات" class="page-title">متتبع المصروفات</h2>
 
+        <!-- Logout button added here to be accessible from all pages -->
+        <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
+
         <main role="main">
             <section id="loginSection" class="section">
                 <h3>تسجيل الدخول</h3>
@@ -36,7 +39,6 @@
                     </select>
                     <button id="saveProjectBtn">حفظ المشروع</button>
                 </div>
-                <button id="logoutBtn">تسجيل الخروج</button>
             </section>
 
             <section id="projectPage" class="section hidden">
@@ -51,21 +53,22 @@
                                 <th>التاريخ</th>
                                 <th>طريقة الدفع</th>
                                 <th>أضيف بواسطة</th>
-                                <th>الإجراءات</th>
+                                <!-- Conditional rendering of the "الإجراءات" column -->
+                                <th id="actionsColumn" class="hidden">الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                 </div>
                 
-                <!-- Added these divs for totals and remaining balance -->
+                <!-- Totals and remaining balance -->
                 <div id="summary">
                     <div id="totals"></div>
                     <div id="remaining"></div>
                 </div>
 
-                <button id="addExpenseBtn">إضافة مصروف جديد</button>
-                <button id="addUserBtn">إضافة مستخدم للمشروع</button>
+                <button id="addExpenseBtn" class="hidden">إضافة مصروف جديد</button>
+                <button id="addUserBtn" class="hidden">إضافة مستخدم للمشروع</button>
 
                 <div id="expenseForm" class="hidden">
                     <h3>إضافة مصروف جديد</h3>
