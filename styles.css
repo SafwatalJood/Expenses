@@ -1,124 +1,130 @@
+/* General Styles */
 body {
     font-family: 'Arial', sans-serif;
-    line-height: 1.6;
     margin: 0;
-    padding: 20px;
-    background-color: #f4f4f4;
-    direction: rtl;
+    padding: 0;
+    background-color: #f9f9f9;
     color: #333;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
-    background-color: #fff;
     padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 .logo {
-    max-width: 300px;
     display: block;
-    margin: 0 auto 20px;
+    margin: 0 auto;
+    max-width: 200px;
 }
 
 .business-name {
-    color: #C0A062;
     text-align: center;
-    font-size: 1.8em;
-    margin-top: 15px;
-    margin-bottom: 15px;
-    text-shadow: 2px 2px 4px rgba(74, 74, 74, 0.3);
+    font-size: 24px;
+    margin: 20px 0;
 }
 
 .page-title {
-    color: #333;
     text-align: center;
-    font-size: 2.2em;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    margin-top: 15px;
-    margin-bottom: 25px;
+    font-size: 20px;
+    margin: 10px 0;
 }
 
-input, select, button {
-    margin-bottom: 12px;
-    padding: 12px;
+.section {
+    margin: 20px 0;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+button {
+    display: block;
     width: 100%;
-    max-width: 300px;
-    box-sizing: border-box;
-    border: 1px solid #C0A062;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
 }
 
 button {
-    background-color: #C0A062;
+    background-color: #b68f60;
     color: #fff;
-    border: none;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.1s;
-    font-weight: bold;
 }
 
 button:hover {
-    background-color: #A88B4E;
-}
-
-button:active {
-    transform: scale(0.98);
+    background-color: #a37a48;
 }
 
 .hidden {
     display: none;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    border: 1px solid #C0A062;
-    padding: 10px;
-    text-align: right;
-}
-
-th {
-    background-color: #f2f2f2;
-    color: #333;
-}
-
 #summary {
-    margin-top: 20px;
+    margin: 20px 0;
+    font-size: 16px;
     text-align: center;
-    font-weight: bold;
+}
+
+#summary div {
+    margin: 5px 0;
 }
 
 #totals {
-    color: #0275d8;
+    color: blue;
 }
 
 #remaining {
-    color: #d9534f;
+    color: red;
 }
 
-@media (max-width: 600px) {
-    body {
-        padding: 10px;
+/* Responsive Table */
+.table-responsive {
+    overflow-x: auto;
+}
+
+#expenseTable {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+}
+
+#expenseTable th,
+#expenseTable td {
+    padding: 8px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+#expenseTable th {
+    background-color: #f4f4f4;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    #expenseTable th,
+    #expenseTable td {
+        padding: 5px;
+        font-size: 12px;
     }
-    .container {
-        padding: 15px;
+
+    .button-group button {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
     }
-    .page-title {
-        font-size: 1.8em;
-    }
-    .business-name {
-        font-size: 1.5em;
-    }
-    .logo {
-        max-width: 250px;
-    }
-    input, select, button {
-        max-width: 100%;
+
+    #expenseTable {
+        font-size: 12px;
     }
 }
