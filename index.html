@@ -14,9 +14,6 @@
 
         <h2 id="متتبع-المصروفات" class="page-title">متتبع المصروفات</h2>
 
-        <!-- Logout button added here to be accessible from all pages -->
-        <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
-
         <main role="main">
             <section id="loginSection" class="section">
                 <h3>تسجيل الدخول</h3>
@@ -43,7 +40,7 @@
 
             <section id="projectPage" class="section hidden">
                 <h3 id="projectTitle"></h3>
-                <div id="expensesList">
+                <div id="expensesList" class="table-responsive">
                     <table id="expenseTable">
                         <thead>
                             <tr>
@@ -53,7 +50,6 @@
                                 <th>التاريخ</th>
                                 <th>طريقة الدفع</th>
                                 <th>أضيف بواسطة</th>
-                                <!-- Conditional rendering of the "الإجراءات" column -->
                                 <th id="actionsColumn" class="hidden">الإجراءات</th>
                             </tr>
                         </thead>
@@ -67,48 +63,13 @@
                     <div id="remaining"></div>
                 </div>
 
-                <button id="addExpenseBtn" class="hidden">إضافة مصروف جديد</button>
-                <button id="addUserBtn" class="hidden">إضافة مستخدم للمشروع</button>
-
-                <div id="expenseForm" class="hidden">
-                    <h3>إضافة مصروف جديد</h3>
-                    <form>
-                        <label for="expenseDescription">الوصف:</label>
-                        <input type="text" id="expenseDescription" required>
-
-                        <label for="expenseAmount">المبلغ:</label>
-                        <input type="number" id="expenseAmount" step="0.01" required>
-
-                        <label for="expenseDate">التاريخ:</label>
-                        <input type="date" id="expenseDate" required>
-
-                        <label for="expenseType">النوع:</label>
-                        <select id="expenseType" required>
-                            <option value="expense">مصروف</option>
-                            <option value="deposit">إيداع</option>
-                        </select>
-
-                        <label for="paymentMethod">طريقة الدفع:</label>
-                        <input type="text" id="paymentMethod" required>
-
-                        <label for="expenseVAT">ضريبة القيمة المضافة:</label>
-                        <input type="number" id="expenseVAT" step="0.01">
-
-                        <button type="button" id="saveExpenseBtn">حفظ المصروف</button>
-                    </form>
+                <!-- Buttons including logout button -->
+                <div class="button-group">
+                    <button id="addExpenseBtn" class="hidden">إضافة مصروف جديد</button>
+                    <button id="addUserBtn" class="hidden">إضافة مستخدم للمشروع</button>
+                    <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
+                    <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
                 </div>
-
-                <div id="addUserForm" class="hidden">
-                    <h3>إضافة مستخدم للمشروع</h3>
-                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم" required>
-                    <select id="newProjectUserRole">
-                        <option value="collaborator">متعاون</option>
-                        <option value="supervisor">مراقب</option>
-                    </select>
-                    <button id="saveNewUserBtn">إضافة المستخدم</button>
-                </div>
-
-                <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
             </section>
         </main>
     </div>
