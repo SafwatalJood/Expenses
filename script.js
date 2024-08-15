@@ -352,8 +352,17 @@ function updateProjectSummary(projectId) {
 
     const remainingBalance = totalDeposits - totalExpenses;
 
-    totalsElement.innerHTML = `إجمالي الإيداعات: ${totalDeposits.toFixed(2)} ر.س<br>إجمالي المصروفات: ${totalExpenses.toFixed(2)} ر.س`;
-    remainingElement.innerHTML = `الرصيد المتبقي: ${remainingBalance.toFixed(2)} ر.س`;
+    if (totalsElement) {
+        totalsElement.innerHTML = `إجمالي الإيداعات: ${totalDeposits.toFixed(2)} ر.س<br>إجمالي المصروفات: ${totalExpenses.toFixed(2)} ر.س`;
+    } else {
+        console.error('totalsElement not found');
+    }
+
+    if (remainingElement) {
+        remainingElement.innerHTML = `الرصيد المتبقي: ${remainingBalance.toFixed(2)} ر.س`;
+    } else {
+        console.error('remainingElement not found');
+    }
 }
 
 function addUserToProject() {
