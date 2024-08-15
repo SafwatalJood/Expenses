@@ -441,7 +441,12 @@ function addUserToProject() {
         users[newUser] = true;
         localStorage.setItem('users', JSON.stringify(users));
 
-        addUserForm.classList.add('hidden');
+        if (addUserForm) {
+            addUserForm.classList.add('hidden');
+        } else {
+            console.error('addUserForm element not found');
+        }
+
         alert('تمت إضافة المستخدم بنجاح');
         loadProjects();  // Refresh the project list to show the new user
     }
@@ -501,7 +506,13 @@ if (backToDashboardBtn) {
     backToDashboardBtn.addEventListener('click', showDashboard);
 }
 if (addUserBtn) {
-    addUserBtn.addEventListener('click', () => addUserForm.classList.remove('hidden'));
+    addUserBtn.addEventListener('click', () => {
+        if (addUserForm) {
+            addUserForm.classList.remove('hidden');
+        } else {
+            console.error('addUserForm element not found');
+        }
+    });
 }
 if (saveNewUserBtn) {
     saveNewUserBtn.addEventListener('click', addUserToProject);
