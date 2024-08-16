@@ -54,8 +54,17 @@ button {
     cursor: pointer;
 }
 
+button.logout-btn {
+    background-color: #c94c4c;
+    color: #fff;
+}
+
 button:hover {
     background-color: #a37a48;
+}
+
+button.logout-btn:hover {
+    background-color: #b73737;
 }
 
 .hidden {
@@ -110,6 +119,34 @@ button:hover {
     margin-top: 20px;
 }
 
+/* Project Blocks */
+.project-block {
+    background-color: #f4f4f4;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.project-block h4 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.project-block p {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.project-block button {
+    width: 100px;
+    margin-top: 10px;
+}
+
+.project-block button:first-child {
+    margin-right: 10px;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
     #expenseTable th,
@@ -126,5 +163,10 @@ button:hover {
 
     #expenseTable {
         font-size: 12px;
+    }
+
+    .project-block button {
+        width: 100%;
+        margin-bottom: 5px;
     }
 }
