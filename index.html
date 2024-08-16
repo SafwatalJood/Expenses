@@ -94,47 +94,7 @@
     <button id="logoutBtn" class="logout-btn hidden">تسجيل الخروج</button>
     <div id="loadingIndicator" class="hidden">جاري التحميل...</div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            getDocs, 
-            doc, 
-            updateDoc, 
-            deleteDoc, 
-            query, 
-            where, 
-            orderBy, 
-            limit, 
-            serverTimestamp,
-            getCountFromServer,
-            setDoc,
-            getDoc
-        } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDOkIghRKHFsP1WVbm_IzrnVjM2a0U62cs",
-            authDomain: "expense-tracker-412b2.firebaseapp.com",
-            projectId: "expense-tracker-412b2",
-            storageBucket: "expense-tracker-412b2.appspot.com",
-            messagingSenderId: "802525395906",
-            appId: "1:802525395906:web:fd6e26ab26388cfd59b45b"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth();
-        const db = getFirestore();
-
-        // Your Firebase code here
-    </script>
-
+    <!-- External JavaScript File -->
     <script src="script.js" type="module"></script>
 </body>
 </html>
