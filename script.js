@@ -30,19 +30,32 @@ if (logoutBtn) {
     logoutBtn.addEventListener('click', handleLogout);
 }
 
-if (addProjectBtn) {
-    addProjectBtn.addEventListener('click', () => projectForm.classList.remove('hidden'));
+// Add a logout button on all pages
+document.addEventListener('DOMContentLoaded', () => {
+    // Inject logout button on all pages
+    const logoutButton = document.createElement('button');
+    logoutButton.textContent = 'تسجيل الخروج';
+    logoutButton.classList.add('logout-btn');
+    logoutButton.addEventListener('click', handleLogout);
+    document.body.prepend(logoutButton);  // Add the button at the top of the body
+});
+
+// Replace dropdown with input field for payment method
+function loadExpenseForm() {
+    const paymentMethodField = document.getElementById('paymentMethod');
+    if (paymentMethodField) {
+        paymentMethodField.outerHTML = `<input type="text" id="paymentMethod" placeholder="طريقة الدفع">`;
+    }
 }
 
-if (saveProjectBtn) {
-    saveProjectBtn.addEventListener('click', saveProject);
-}
+document.addEventListener('DOMContentLoaded', loadExpenseForm);
 
 if (addExpenseBtn) {
     addExpenseBtn.addEventListener('click', () => {
         if (expenseForm) {
             console.log('Add Expense button clicked');
             expenseForm.classList.remove('hidden');
+            addExpenseBtn.classList.add('hidden'); // Hide the "Add Expense" button after clicking
             console.log('Expense form visibility:', !expenseForm.classList.contains('hidden'));
         } else {
             console.error('expenseForm element not found');
@@ -51,26 +64,26 @@ if (addExpenseBtn) {
 }
 
 if (saveExpenseBtn) {
-    saveExpenseBtn.addEventListener('click', saveExpense);
-}
-
-if (backToDashboardBtn) {
-    backToDashboardBtn.addEventListener('click', showDashboard);
-}
-
-if (addUserBtn) {
-    addUserBtn.addEventListener('click', () => {
-        if (addUserForm) {
-            addUserForm.classList.remove('hidden');
-        } else {
-            console.error('addUserForm element not found');
-        }
+    saveExpenseBtn.addEventListener('click', () => {
+        console.log('Saving expense...');
+        expenseForm.classList.add('hidden');  // Hide the form after saving
+        addExpenseBtn.classList.remove('hidden'); // Show the "Add Expense" button again
     });
 }
 
-if (saveNewUserBtn) {
-    saveNewUserBtn.addEventListener('click', addUserToProject);
+// Hide add expense form and button if the user does not have permission
+function hideAddExpenseForNonAdmins() {
+    if (currentUserRole !== 'admin') {
+        if (addExpenseBtn) {
+            addExpenseBtn.classList.add('hidden');
+        }
+        if (expenseForm) {
+            expenseForm.classList.add('hidden');
+        }
+    }
 }
+
+document.addEventListener('DOMContentLoaded', hideAddExpenseForNonAdmins);
 
 // Global variables
 let currentUser = '';
@@ -150,6 +163,7 @@ function loadProjects() {
     } else {
         projects.forEach(project => {
             const projectElement = document.createElement('div');
+            projectElement.classList.add('project-block');  // Add class for styling
             const usersInfo = project.users ? project.users.map(user => `${user.name} (${user.role === 'collaborator' ? 'متعاون' : 'مراقب'})`).join(', ') : 'لا يوجد مستخدمين';
             projectElement.innerHTML = `
                 <h4>${project.name}</h4>
