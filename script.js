@@ -54,12 +54,9 @@ const addUserForm = document.getElementById('addUserForm');
 const saveNewUserBtn = document.getElementById('saveNewUserBtn');
 const totalsElement = document.getElementById('totals');
 const remainingElement = document.getElementById('remaining');
-const actionsColumn = document.getElementById('actionsColumn');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const projectSearch = document.getElementById('projectSearch');
-const paginationElement = document.getElementById('pagination');
 const logContainer = document.getElementById('activityLogContainer');
-const viewLogBtn = document.getElementById('viewLogBtn');
 
 // Make necessary functions globally accessible
 window.showDashboard = showDashboard;
@@ -79,20 +76,6 @@ window.viewProject = viewProject;
 window.exportProjectExpenses = exportProjectExpenses;
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', initializeApp);
-loginForm.addEventListener('submit', handleLogin);
-logoutBtn.addEventListener('click', handleLogout);
-addProjectBtn.addEventListener('click', showProjectForm);
-saveProjectBtn.addEventListener('click', saveProject);
-addExpenseBtn.addEventListener('click', showExpenseForm);
-saveExpenseBtn.addEventListener('click', saveExpense);
-backToDashboardBtn.addEventListener('click', showDashboard);
-addUserBtn.addEventListener('click', showAddUserForm);
-saveNewUserBtn.addEventListener('click', addUserToProject);
-projectSearch.addEventListener('input', handleProjectSearch);
-viewLogBtn.addEventListener('click', viewActivityLog);
 
 // Function definitions
 function initializeApp() {
@@ -308,7 +291,8 @@ async function loadProjects() {
 
         const totalCount = await getCountFromServer(collection(db, "projects"));
         const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
-        displayPagination(totalPages, loadProjects);
+        // Pagination element not defined in HTML, so we can comment or remove this line
+        // displayPagination(totalPages, loadProjects);
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل المشاريع');
     } finally {
@@ -466,24 +450,6 @@ function showProjectForm() {
     saveProjectBtn.onclick = saveProject;
 }
 
-// Pagination function
-function displayPagination(totalPages, loadFunction) {
-    paginationElement.innerHTML = '';
-
-    for (let i = 1; i <= totalPages; i++) {
-        const pageButton = document.createElement('button');
-        pageButton.textContent = i;
-        pageButton.addEventListener('click', () => {
-            currentPage = i;
-            loadFunction();
-        });
-        if (i === currentPage) {
-            pageButton.classList.add('active');
-        }
-        paginationElement.appendChild(pageButton);
-    }
-}
-
 // Expense Management Functions
 
 async function loadExpenses(projectId) {
@@ -526,7 +492,8 @@ async function loadExpenses(projectId) {
 
         const totalCount = await getCountFromServer(collection(db, `projects/${projectId}/expenses`));
         const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
-        displayPagination(totalPages, () => loadExpenses(projectId));
+        // Pagination element not defined in HTML, so we can comment or remove this line
+        // displayPagination(totalPages, () => loadExpenses(projectId));
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل القيود');
     } finally {
@@ -695,6 +662,28 @@ function showExpenseForm() {
     document.getElementById('paymentMethod').value = '';
     document.getElementById('expenseVAT').value = '';
     saveExpenseBtn.onclick = saveExpense;
+}
+
+// View a specific project
+async function viewProject(projectId) {
+    try {
+        showLoading();
+        currentProjectId = projectId;
+        const projectDoc = await getDoc(doc(db, "projects", projectId));
+        if (projectDoc.exists()) {
+            const project = projectDoc.data();
+            document.getElementById('projectTitle').textContent = project.name;
+            projectPage.classList.remove('hidden');
+            dashboard.classList.add('hidden');
+            loadExpenses(projectId);
+        } else {
+            throw new Error('Project not found');
+        }
+    } catch (error) {
+        handleFirebaseError(error, 'Failed to load project');
+    } finally {
+        hideLoading();
+    }
 }
 
 // Utility Functions
