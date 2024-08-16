@@ -518,7 +518,6 @@
         }
 
         updateProjectSummary(projectId);
-        createExpenseChart(expenses);
 
         const totalCount = await getCountFromServer(collection(db, `projects/${projectId}/expenses`));
         const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
