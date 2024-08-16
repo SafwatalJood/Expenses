@@ -1,3 +1,4 @@
+<!-- Updated index.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -62,6 +63,33 @@
                     <div id="totals"></div>
                     <div id="remaining"></div>
                 </div>
+
+                <!-- Expense Form -->
+                <form id="expenseForm" class="hidden">
+                    <input type="text" id="expenseDescription" placeholder="الوصف">
+                    <input type="number" id="expenseAmount" placeholder="المبلغ">
+                    <input type="date" id="expenseDate">
+                    <select id="expenseType">
+                        <option value="expense">مصروف</option>
+                        <option value="deposit">إيداع</option>
+                    </select>
+                    <select id="paymentMethod">
+                        <option value="cash">نقدي</option>
+                        <option value="bank">تحويل بنكي</option>
+                    </select>
+                    <input type="number" id="expenseVAT" placeholder="ضريبة القيمة المضافة">
+                    <button type="button" id="saveExpenseBtn">حفظ المصروف</button>
+                </form>
+
+                <!-- Add User Form -->
+                <form id="addUserForm" class="hidden">
+                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم">
+                    <select id="newProjectUserRole">
+                        <option value="collaborator">متعاون</option>
+                        <option value="observer">مراقب</option>
+                    </select>
+                    <button type="button" id="saveNewUserBtn">إضافة المستخدم</button>
+                </form>
 
                 <!-- Buttons including logout button -->
                 <div class="button-group">
