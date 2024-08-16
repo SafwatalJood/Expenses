@@ -204,13 +204,6 @@ button:hover {
     background-color: #45a049;
 }
 
-/* Chart Container */
-#expenseChart {
-    max-width: 100%;
-    height: 300px;
-    margin-top: 20px;
-}
-
 /* Activity Log */
 #activityLogContainer {
     background-color: #fff;
@@ -266,10 +259,6 @@ button:hover {
 
     #summary {
         font-size: 14px;
-    }
-
-    #expenseChart {
-        height: 200px;
     }
 }
 
