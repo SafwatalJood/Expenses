@@ -1,4 +1,3 @@
-<!-- Updated index.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -69,14 +68,7 @@
                     <input type="text" id="expenseDescription" placeholder="الوصف">
                     <input type="number" id="expenseAmount" placeholder="المبلغ">
                     <input type="date" id="expenseDate">
-                    <select id="expenseType">
-                        <option value="expense">مصروف</option>
-                        <option value="deposit">إيداع</option>
-                    </select>
-                    <select id="paymentMethod">
-                        <option value="cash">نقدي</option>
-                        <option value="bank">تحويل بنكي</option>
-                    </select>
+                    <input type="text" id="paymentMethod" placeholder="طريقة الدفع">
                     <input type="number" id="expenseVAT" placeholder="ضريبة القيمة المضافة">
                     <button type="button" id="saveExpenseBtn">حفظ المصروف</button>
                 </form>
@@ -101,6 +93,36 @@
             </section>
         </main>
     </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOkIghRKHFsP1WVbm_IzrnVjM2a0U62cs",
+            authDomain: "expense-tracker-412b2.firebaseapp.com",
+            projectId: "expense-tracker-412b2",
+            storageBucket: "expense-tracker-412b2.appspot.com",
+            messagingSenderId: "802525395906",
+            appId: "1:802525395906:web:fd6e26ab26388cfd59b45b"
+        };
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+    </script>
+    
+    <!-- Firebase Auth and Firestore -->
+    <script type="module">
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+        
+        // Initialize Firebase services
+        const auth = getAuth();
+        const db = getFirestore();
+    </script>
+
     <script src="script.js"></script>
 </body>
 </html>
