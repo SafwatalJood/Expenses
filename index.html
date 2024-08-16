@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>صفوة الجود للمقاولات - متتبع المصروفات</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
         <img src="logo.png" alt="شعار صفوة الجود" class="logo">
-
         <h1 id="صفوة-الجود-للمقاولات" class="business-name">صفوة الجود للمقاولات</h1>
-
         <h2 id="متتبع-المصروفات" class="page-title">متتبع المصروفات</h2>
 
         <main role="main">
@@ -25,17 +24,18 @@
 
             <section id="dashboard" class="section hidden">
                 <h3>لوحة التحكم</h3>
+                <input type="text" id="projectSearch" placeholder="البحث عن مشروع">
                 <div id="projectsList"></div>
                 <button id="addProjectBtn">إضافة مشروع جديد</button>
-                <div id="projectForm" class="hidden">
+                <form id="projectForm" class="hidden">
                     <input type="text" id="projectName" placeholder="اسم المشروع" required>
                     <input type="text" id="projectUser" placeholder="اسم المستخدم">
                     <select id="projectUserRole">
                         <option value="collaborator">متعاون</option>
-                        <option value="supervisor">مراقب</option>
+                        <option value="viewer">مراقب</option>
                     </select>
-                    <button id="saveProjectBtn">حفظ المشروع</button>
-                </div>
+                    <button type="submit" id="saveProjectBtn">حفظ المشروع</button>
+                </form>
             </section>
 
             <section id="projectPage" class="section hidden">
@@ -50,79 +50,57 @@
                                 <th>التاريخ</th>
                                 <th>طريقة الدفع</th>
                                 <th>أضيف بواسطة</th>
-                                <th id="actionsColumn" class="hidden">الإجراءات</th>
+                                <th id="actionsColumn">الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                 </div>
-                
-                <!-- Totals and remaining balance -->
                 <div id="summary">
                     <div id="totals"></div>
                     <div id="remaining"></div>
                 </div>
-
-                <!-- Expense Form -->
+                <canvas id="expenseChart"></canvas>
+                <div class="button-group">
+                    <button id="addExpenseBtn">أضف قيد</button>
+                    <button id="addUserBtn" class="hidden">إضافة مستخدم للمشروع</button>
+                    <button id="exportBtn" class="hidden">تصدير تقرير القيود</button>
+                    <button id="backToDashboardBtn" class="hidden">العودة للوحة المشاريع</button>
+                </div>
                 <form id="expenseForm" class="hidden">
-                    <input type="text" id="expenseDescription" placeholder="الوصف">
-                    <input type="number" id="expenseAmount" placeholder="المبلغ">
-                    <input type="date" id="expenseDate">
-                    <input type="text" id="paymentMethod" placeholder="طريقة الدفع">
+                    <input type="text" id="expenseDescription" placeholder="الوصف" required>
+                    <input type="number" id="expenseAmount" placeholder="المبلغ" required>
+                    <input type="date" id="expenseDate" required>
+                    <select id="expenseType" required>
+                        <option value="expense">مصروف</option>
+                        <option value="deposit">إيداع</option>
+                    </select>
+                    <input type="text" id="paymentMethod" placeholder="طريقة الدفع" required>
                     <input type="number" id="expenseVAT" placeholder="ضريبة القيمة المضافة">
-                    <button type="button" id="saveExpenseBtn">حفظ المصروف</button>
+                    <button type="submit" id="saveExpenseBtn">حفظ القيد</button>
                 </form>
-
-                <!-- Add User Form -->
                 <form id="addUserForm" class="hidden">
-                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم">
+                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم الجديد" required>
                     <select id="newProjectUserRole">
                         <option value="collaborator">متعاون</option>
-                        <option value="observer">مراقب</option>
+                        <option value="viewer">مراقب</option>
                     </select>
-                    <button type="button" id="saveNewUserBtn">إضافة المستخدم</button>
+                    <button type="submit" id="saveNewUserBtn">إضافة المستخدم</button>
                 </form>
-
-                <!-- Buttons including logout button -->
-                <div class="button-group">
-                    <button id="addExpenseBtn" class="hidden">إضافة مصروف جديد</button>
-                    <button id="addUserBtn" class="hidden">إضافة مستخدم للمشروع</button>
-                    <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
-                    <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
-                </div>
             </section>
+
+            <div id="activityLogContainer" class="hidden"></div>
         </main>
     </div>
 
+    <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
+    <div id="loadingIndicator" class="hidden">جاري التحميل...</div>
+
     <!-- Firebase SDK -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDOkIghRKHFsP1WVbm_IzrnVjM2a0U62cs",
-            authDomain: "expense-tracker-412b2.firebaseapp.com",
-            projectId: "expense-tracker-412b2",
-            storageBucket: "expense-tracker-412b2.appspot.com",
-            messagingSenderId: "802525395906",
-            appId: "1:802525395906:web:fd6e26ab26388cfd59b45b"
-        };
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        // Your Firebase configuration code here
     </script>
     
-    <!-- Firebase Auth and Firestore -->
-    <script type="module">
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-        
-        // Initialize Firebase services
-        const auth = getAuth();
-        const db = getFirestore();
-    </script>
-
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
 </html>
