@@ -1,124 +1,346 @@
-// Firebase initialization
-import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      doc, 
+      updateDoc, 
+      deleteDoc, 
+      query, 
+      where, 
+      orderBy, 
+      limit, 
+      serverTimestamp,
+      getCountFromServer,
+      setDoc,
+      getDoc
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// Initialize Firebase services
-const auth = getAuth();
-const db = getFirestore();
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDOkIghRKHFsP1WVbm_IzrnVjM2a0U62cs",
+    authDomain: "expense-tracker-412b2.firebaseapp.com",
+    projectId: "expense-tracker-412b2",
+    storageBucket: "expense-tracker-412b2.appspot.com",
+    messagingSenderId: "802525395906",
+    appId: "1:802525395906:web:fd6e26ab26388cfd59b45b"
+  };
 
-// DOM Elements
-const loginForm = document.getElementById('loginForm');
-const loginSection = document.getElementById('loginSection');
-const dashboard = document.getElementById('dashboard');
-const logoutBtn = document.getElementById('logoutBtn');
-const projectsList = document.getElementById('projectsList');
-const addProjectBtn = document.getElementById('addProjectBtn');
-const projectForm = document.getElementById('projectForm');
-const saveProjectBtn = document.getElementById('saveProjectBtn');
-const projectPage = document.getElementById('projectPage');
-const expenseTableBody = document.querySelector('#expenseTable tbody');
-const expensesList = document.getElementById('expensesList');
-const addExpenseBtn = document.getElementById('addExpenseBtn');
-const expenseForm = document.getElementById('expenseForm');
-const saveExpenseBtn = document.getElementById('saveExpenseBtn');
-const backToDashboardBtn = document.getElementById('backToDashboardBtn');
-const addUserBtn = document.getElementById('addUserBtn');
-const addUserForm = document.getElementById('addUserForm');
-const saveNewUserBtn = document.getElementById('saveNewUserBtn');
-const totalsElement = document.getElementById('totals');
-const remainingElement = document.getElementById('remaining');
-const actionsColumn = document.getElementById('actionsColumn');
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getFirestore();
 
-// Global variables
-let currentUser = null;
-let currentProjectId = '';
-let currentUserRole = '';
+  // Global variables
+  let currentUser = null;
+  let currentProjectId = '';
+  let currentUserRole = '';
+  let currentPage = 1;
+  const itemsPerPage = 10;
+  const cache = {};
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-// Functions
-async function handleLogin(e) {
+  // Constants
+  const ROLES = {
+    ADMIN: 'admin',
+    COLLABORATOR: 'collaborator',
+    VIEWER: 'viewer'
+  };
+
+  // DOM Elements
+  const loginForm = document.getElementById('loginForm');
+  const loginSection = document.getElementById('loginSection');
+  const dashboard = document.getElementById('dashboard');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const projectsList = document.getElementById('projectsList');
+  const addProjectBtn = document.getElementById('addProjectBtn');
+  const projectForm = document.getElementById('projectForm');
+  const saveProjectBtn = document.getElementById('saveProjectBtn');
+  const projectPage = document.getElementById('projectPage');
+  const expenseTableBody = document.querySelector('#expenseTable tbody');
+  const expensesList = document.getElementById('expensesList');
+  const addExpenseBtn = document.getElementById('addExpenseBtn');
+  const expenseForm = document.getElementById('expenseForm');
+  const saveExpenseBtn = document.getElementById('saveExpenseBtn');
+  const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+  const addUserBtn = document.getElementById('addUserBtn');
+  const addUserForm = document.getElementById('addUserForm');
+  const saveNewUserBtn = document.getElementById('saveNewUserBtn');
+  const totalsElement = document.getElementById('totals');
+  const remainingElement = document.getElementById('remaining');
+  const actionsColumn = document.getElementById('actionsColumn');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const projectSearch = document.getElementById('projectSearch');
+  const paginationElement = document.getElementById('pagination');
+  const logContainer = document.getElementById('activityLogContainer');
+  const viewLogBtn = document.getElementById('viewLogBtn');
+
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', initializeApp);
+  loginForm.addEventListener('submit', handleLogin);
+  logoutBtn.addEventListener('click', handleLogout);
+  addProjectBtn.addEventListener('click', showProjectForm);
+  saveProjectBtn.addEventListener('click', saveProject);
+  addExpenseBtn.addEventListener('click', showExpenseForm);
+  saveExpenseBtn.addEventListener('click', saveExpense);
+  backToDashboardBtn.addEventListener('click', showDashboard);
+  addUserBtn.addEventListener('click', showAddUserForm);
+  saveNewUserBtn.addEventListener('click', addUserToProject);
+  projectSearch.addEventListener('input', handleProjectSearch);
+  viewLogBtn.addEventListener('click', viewActivityLog);
+
+  function initializeApp() {
+    // Check if user is already logged in
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            getDoc(doc(db, "users", user.uid)).then(docSnapshot => {
+                if (docSnapshot.exists()) {
+                    currentUserRole = docSnapshot.data().role;
+                    if (currentUserRole === ROLES.ADMIN) {
+                        showDashboard();
+                    } else {
+                        findAndViewUserProject(user.uid);
+                    }
+                }
+            });
+        } else {
+            showLoginForm();
+        }
+    });
+  }
+
+  function showLoginForm() {
+    loginSection.classList.remove('hidden');
+    dashboard.classList.add('hidden');
+    projectPage.classList.add('hidden');
+  }
+
+  // Authentication and User Management
+
+  async function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value; // You need to add a password field in your HTML
 
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, username, password);
+        showLoading();
+        // For simplicity, we're using signInAnonymously. In a real app, you'd use proper authentication.
+        const userCredential = await signInAnonymously(auth);
         currentUser = userCredential.user;
         
         // Get user role from Firestore
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        currentUserRole = userDoc.data().role;
+        const userDoc = await getDoc(doc(db, "users", username));
+        if (userDoc.exists()) {
+            currentUserRole = userDoc.data().role;
+            currentUser.displayName = username; // Set display name for logging purposes
 
-        if (currentUserRole === 'admin') {
-            showDashboard();
-        } else {
-            const userProjects = await getDocs(query(collection(db, "projects"), where("users", "array-contains", currentUser.uid)));
-            if (!userProjects.empty) {
-                viewProject(userProjects.docs[0].id);
+            if (currentUserRole === ROLES.ADMIN) {
+                showDashboard();
             } else {
-                alert('لم يتم تعيين المستخدم لأي مشروع');
+                findAndViewUserProject(username);
             }
+        } else {
+            throw new Error('المستخدم غير موجود');
         }
     } catch (error) {
-        console.error("Error logging in: ", error);
-        alert('فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.');
+        handleFirebaseError(error, 'فشل تسجيل الدخول');
+    } finally {
+        hideLoading();
     }
-}
+  }
 
-async function handleLogout() {
+  async function handleLogout() {
     try {
+        showLoading();
         await signOut(auth);
         currentUser = null;
         currentProjectId = '';
         currentUserRole = '';
-        loginSection.classList.remove('hidden');
-        dashboard.classList.add('hidden');
-        projectPage.classList.add('hidden');
+        showLoginForm();
     } catch (error) {
-        console.error("Error signing out: ", error);
+        handleFirebaseError(error, 'فشل تسجيل الخروج');
+    } finally {
+        hideLoading();
     }
-}
+  }
 
-async function loadProjects() {
-    if (currentUserRole !== 'admin') return;
-
-    projectsList.innerHTML = '';
-    const projectsSnapshot = await getDocs(collection(db, "projects"));
-
-    if (projectsSnapshot.empty) {
-        projectsList.innerHTML = '<p>لا توجد مشاريع حالياً</p>';
-    } else {
-        projectsSnapshot.forEach(doc => {
-            const project = doc.data();
-            const projectElement = document.createElement('div');
-            projectElement.classList.add('project-block');
-            projectElement.innerHTML = `
-                <h4>${project.name}</h4>
-                <p>المستخدمون: ${project.users ? project.users.join(', ') : 'لا يوجد مستخدمين'}</p>
-                <button onclick="editProject('${doc.id}')">تعديل</button>
-                <button onclick="deleteProject('${doc.id}')">حذف</button>
-                <button onclick="viewProject('${doc.id}')">عرض</button>
-            `;
-            projectsList.appendChild(projectElement);
-        });
+  async function findAndViewUserProject(userId) {
+    try {
+        const userProjects = await getDocs(query(collection(db, "projects"), where("users", "array-contains", userId)));
+        if (!userProjects.empty) {
+            viewProject(userProjects.docs[0].id);
+        } else {
+            throw new Error('لم يتم تعيين المستخدم لأي مشروع');
+        }
+    } catch (error) {
+        handleFirebaseError(error);
+        handleLogout();
     }
-}
+  }
 
-async function saveProject() {
-    if (currentUserRole !== 'admin') {
-        alert('ليس لديك صلاحية لإنشاء مشروع جديد');
+  async function addUserToProject() {
+    if (currentUserRole !== ROLES.ADMIN) {
+        alert('ليس لديك صلاحية لإضافة مستخدم للمشروع');
         return;
     }
 
-    const projectName = document.getElementById('projectName').value;
-    const projectUser = document.getElementById('projectUser').value;
-    const projectUserRole = document.getElementById('projectUserRole').value;
+    const newUser = document.getElementById('newProjectUser').value;
+    const newUserRole = document.getElementById('newProjectUserRole').value;
 
-    if (!projectName) {
-        alert('الرجاء إدخال اسم المشروع');
+    if (!newUser) {
+        alert('الرجاء إدخال اسم المستخدم');
         return;
     }
 
     try {
+        showLoading();
+        const projectDoc = await getDoc(doc(db, "projects", currentProjectId));
+        if (projectDoc.exists()) {
+            const project = projectDoc.data();
+            if (!project.users) {
+                project.users = [];
+            }
+            project.users.push(newUser);
+            await updateDoc(doc(db, "projects", currentProjectId), { users: project.users });
+
+            const userRef = doc(db, "users", newUser);
+            await setDoc(userRef, { role: newUserRole }, { merge: true });
+
+            addUserForm.classList.add('hidden');
+            alert('تمت إضافة المستخدم بنجاح');
+            loadProjects();
+            await logActivity('add_user', `Added user ${newUser} to project ${currentProjectId}`);
+        }
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في إضافة المستخدم');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  function showAddUserForm() {
+    addUserForm.classList.remove('hidden');
+  }
+
+  // Utility functions for loading and error handling
+
+  function showLoading() {
+    loadingIndicator.classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    loadingIndicator.classList.add('hidden');
+  }
+
+  function handleFirebaseError(error, customMessage = 'حدث خطأ') {
+    console.error(error);
+    let errorMessage = customMessage;
+    if (error.code) {
+        switch (error.code) {
+            case 'auth/user-not-found':
+                errorMessage = 'المستخدم غير موجود. يرجى التحقق من اسم المستخدم.';
+                break;
+            case 'auth/wrong-password':
+                errorMessage = 'كلمة المرور غير صحيحة. حاول مرة أخرى.';
+                break;
+            case 'auth/too-many-requests':
+                errorMessage = 'محاولات تسجيل دخول فاشلة كثيرة. يرجى المحاولة لاحقًا.';
+                break;
+            case 'permission-denied':
+                errorMessage = 'ليس لديك الصلاحية لإجراء هذه العملية.';
+                break;
+            // Add more cases as needed
+        }
+    }
+    alert(errorMessage);
+  }
+
+  async function logActivity(action, details) {
+    if (currentUserRole !== ROLES.ADMIN) return; // Only admins can see the log
+
+    try {
+        await addDoc(collection(db, "activityLog"), {
+            timestamp: serverTimestamp(),
+            user: currentUser.displayName,
+            action: action,
+            details: details
+        });
+    } catch (error) {
+        console.error("Error adding activity log: ", error);
+    }
+  }
+
+  // Project Management Functions
+
+  async function loadProjects() {
+    if (currentUserRole !== ROLES.ADMIN) return;
+
+    showLoading();
+    projectsList.innerHTML = '';
+    
+    try {
+        const projects = await getCachedData('projects', async () => {
+            const projectsSnapshot = await getDocs(query(
+                collection(db, "projects"),
+                orderBy("name"),
+                limit(itemsPerPage)
+            ));
+            return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        });
+
+        if (projects.length === 0) {
+            projectsList.innerHTML = '<p>لا توجد مشاريع حالياً</p>';
+        } else {
+            projects.forEach(project => {
+                const projectElement = createProjectElement(project);
+                projectsList.appendChild(projectElement);
+            });
+        }
+
+        const totalCount = await getCountFromServer(collection(db, "projects"));
+        const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
+        displayPagination(totalPages, loadProjects);
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحميل المشاريع');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  function createProjectElement(project) {
+    const projectElement = document.createElement('div');
+    projectElement.classList.add('project-block');
+    projectElement.innerHTML = `
+        <h4>${sanitizeInput(project.name)}</h4>
+        <p>المستخدمون: ${project.users ? project.users.map(sanitizeInput).join(', ') : 'لا يوجد مستخدمين'}</p>
+        <button onclick="editProject('${project.id}')">تعديل</button>
+        <button onclick="deleteProject('${project.id}')">حذف</button>
+        <button onclick="viewProject('${project.id}')">عرض</button>
+        <button onclick="exportProjectExpenses('${project.id}', '${project.name}')" class="export-btn">تصدير تقرير القيود</button>
+    `;
+    return projectElement;
+  }
+
+  async function saveProject() {
+    if (currentUserRole !== ROLES.ADMIN) {
+        alert('ليس لديك صلاحية لإنشاء مشروع جديد');
+        return;
+    }
+
+    if (!validateForm('projectForm')) {
+        return;
+    }
+
+    const projectName = sanitizeInput(document.getElementById('projectName').value);
+    const projectUser = sanitizeInput(document.getElementById('projectUser').value);
+    const projectUserRole = sanitizeInput(document.getElementById('projectUserRole').value);
+
+    try {
+        showLoading();
         const newProject = {
             name: projectName,
             users: projectUser ? [projectUser] : []
@@ -127,238 +349,317 @@ async function saveProject() {
         const docRef = await addDoc(collection(db, "projects"), newProject);
 
         if (projectUser) {
-            // Add user to users collection if not exists
             const userRef = doc(db, "users", projectUser);
             await setDoc(userRef, { role: projectUserRole }, { merge: true });
         }
 
+        delete cache['projects']; // Invalidate projects cache
         projectForm.classList.add('hidden');
+        await logActivity('create_project', `Created project ${projectName}`);
         loadProjects();
     } catch (error) {
-        console.error("Error saving project: ", error);
-        alert('حدث خطأ أثناء حفظ المشروع');
+        handleFirebaseError(error, 'فشل في حفظ المشروع');
+    } finally {
+        hideLoading();
     }
-}
+  }
 
-async function editProject(projectId) {
-    console.log('Editing project:', projectId);
-    if (currentUserRole !== 'admin') {
+  async function editProject(projectId) {
+    if (currentUserRole !== ROLES.ADMIN) {
         alert('ليس لديك صلاحية لتعديل المشروع');
         return;
     }
-    const projectDoc = await getDoc(doc(db, "projects", projectId));
-    if (projectDoc.exists()) {
-        const project = projectDoc.data();
-        document.getElementById('projectName').value = project.name;
-        if (project.users && project.users.length > 0) {
-            document.getElementById('projectUser').value = project.users[0];
-            document.getElementById('projectUserRole').value = 'collaborator'; // Assuming default role
-        } else {
-            document.getElementById('projectUser').value = '';
-            document.getElementById('projectUserRole').value = 'collaborator';
-        }
-        projectForm.classList.remove('hidden');
-        saveProjectBtn.onclick = async function() {
-            const updatedName = document.getElementById('projectName').value;
-            const updatedUser = document.getElementById('projectUser').value;
-            const updatedRole = document.getElementById('projectUserRole').value;
-            
-            const updatedProject = {
-                name: updatedName,
-                users: updatedUser ? [updatedUser] : []
-            };
-            await updateDoc(doc(db, "projects", projectId), updatedProject);
-            if (updatedUser) {
-                const userRef = doc(db, "users", updatedUser);
-                await setDoc(userRef, { role: updatedRole }, { merge: true });
-            }
-            projectForm.classList.add('hidden');
-            loadProjects();
-        };
-    }
-}
 
-async function deleteProject(projectId) {
-    console.log('Deleting project:', projectId);
-    if (currentUserRole !== 'admin') {
+    try {
+        showLoading();
+        const projectDoc = await getDoc(doc(db, "projects", projectId));
+        if (projectDoc.exists()) {
+            const project = projectDoc.data();
+            document.getElementById('projectName').value = project.name;
+            document.getElementById('projectUser').value = project.users && project.users.length > 0 ? project.users[0] : '';
+            document.getElementById('projectUserRole').value = 'collaborator'; // Default role
+            projectForm.classList.remove('hidden');
+            saveProjectBtn.onclick = () => updateProject(projectId);
+        }
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحميل بيانات المشروع');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  async function updateProject(projectId) {
+    if (!validateForm('projectForm')) {
+        return;
+    }
+
+    const updatedName = sanitizeInput(document.getElementById('projectName').value);
+    const updatedUser = sanitizeInput(document.getElementById('projectUser').value);
+    const updatedRole = sanitizeInput(document.getElementById('projectUserRole').value);
+
+    try {
+        showLoading();
+        const updatedProject = {
+            name: updatedName,
+            users: updatedUser ? [updatedUser] : []
+        };
+        await updateDoc(doc(db, "projects", projectId), updatedProject);
+        if (updatedUser) {
+            const userRef = doc(db, "users", updatedUser);
+            await setDoc(userRef, { role: updatedRole }, { merge: true });
+        }
+        delete cache['projects']; // Invalidate projects cache
+        projectForm.classList.add('hidden');
+        await logActivity('update_project', `Updated project ${updatedName}`);
+        loadProjects();
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحديث المشروع');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  async function deleteProject(projectId) {
+    if (currentUserRole !== ROLES.ADMIN) {
         alert('ليس لديك صلاحية لحذف المشروع');
         return;
     }
+
     if (confirm('هل أنت متأكد من حذف هذا المشروع؟')) {
-        await deleteDoc(doc(db, "projects", projectId));
-        loadProjects();
-        console.log('Project deleted successfully');
-    }
-}
-
-async function viewProject(projectId) {
-    console.log('Viewing project:', projectId);
-    const projectDoc = await getDoc(doc(db, "projects", projectId));
-    if (projectDoc.exists()) {
-        const project = projectDoc.data();
-        currentProjectId = projectId;
-        dashboard.classList.add('hidden');
-        loginSection.classList.add('hidden');
-        projectPage.classList.remove('hidden');
-        document.getElementById('projectTitle').textContent = project.name;
-        loadExpenses(projectId);
-        updateProjectSummary(projectId);
-        
-        // Show/hide buttons and actions column based on user role
-        if (currentUserRole === 'collaborator' || currentUserRole === 'admin') {
-            addExpenseBtn.classList.remove('hidden');
-        } else {
-            addExpenseBtn.classList.add('hidden');
-        }
-
-        if (currentUserRole === 'admin') {
-            addUserBtn.classList.remove('hidden');
-            backToDashboardBtn.classList.remove('hidden');
-            actionsColumn.classList.remove('hidden');
-        } else {
-            addUserBtn.classList.add('hidden');
-            backToDashboardBtn.classList.add('hidden');
-            actionsColumn.classList.add('hidden');
+        try {
+            showLoading();
+            await deleteDoc(doc(db, "projects", projectId));
+            delete cache['projects']; // Invalidate projects cache
+            await logActivity('delete_project', `Deleted project ${projectId}`);
+            loadProjects();
+        } catch (error) {
+            handleFirebaseError(error, 'فشل في حذف المشروع');
+        } finally {
+            hideLoading();
         }
     }
-}
+  }
 
-async function loadExpenses(projectId) {
-    expenseTableBody.innerHTML = '';
-    const expensesSnapshot = await getDocs(collection(db, `projects/${projectId}/expenses`));
-
-    if (expensesSnapshot.empty) {
-        expensesList.innerHTML = '<p>لا توجد مصروفات لهذا المشروع</p>';
-    } else {
-        expensesSnapshot.forEach(expenseDoc => {
-            const expense = expenseDoc.data();
-            const row = expenseTableBody.insertRow();
-            const amountClass = expense.type === 'expense' ? 'negative' : 'positive';
-            const amountSign = expense.type === 'expense' ? '-' : '+';
-
-            row.innerHTML = `
-                <td>${expense.description}</td>
-                <td class="expense-amount ${amountClass}">${amountSign}${expense.amount}</td>
-                <td>${expense.date}</td>
-                <td>${expense.type === 'expense' ? 'مصروف' : 'إيداع'}</td>
-                <td>${expense.paymentMethod}</td>
-                <td>${expense.addedBy}</td>
-                ${currentUserRole === 'admin' ? `
-                    <td>
-                        <button onclick="editExpense('${projectId}', '${expenseDoc.id}')">تعديل</button>
-                        <button onclick="deleteExpense('${projectId}', '${expenseDoc.id}')">حذف</button>
-                    </td>
-                ` : ''}
-            `;
-        });
-    }
-
-    updateProjectSummary(projectId);
-}
-
-async function saveExpense() {
-    console.log('Attempting to save expense');
-    if (currentUserRole !== 'admin' && currentUserRole !== 'collaborator') {
-        alert('ليس لديك صلاحية لإضافة مصروف');
-        return;
-    }
-    
-    const formElements = [
-        {id: 'expenseDescription', name: 'الوصف'},
-        {id: 'expenseAmount', name: 'المبلغ'},
-        {id: 'expenseDate', name: 'التاريخ'},
-        {id: 'expenseType', name: 'النوع'},
-        {id: 'paymentMethod', name: 'طريقة الدفع'},
-        {id: 'expenseVAT', name: 'ضريبة القيمة المضافة'}
-    ];
-
-    const missingElements = [];
-    const elementValues = {};
-
-    formElements.forEach(element => {
-        const el = document.getElementById(element.id);
-        if (!el) {
-            missingElements.push(element.name);
+  function handleProjectSearch() {
+    const searchTerm = projectSearch.value.toLowerCase();
+    const projectElements = document.querySelectorAll('.project-block');
+    projectElements.forEach(element => {
+        const projectName = element.querySelector('h4').textContent.toLowerCase();
+        if (projectName.includes(searchTerm)) {
+            element.style.display = '';
         } else {
-            elementValues[element.id] = el.value;
+            element.style.display = 'none';
         }
     });
+  }
 
-    if (missingElements.length > 0) {
-        console.error('Missing form elements:', missingElements.join(', '));
-        alert(`حدث خطأ في النموذج. العناصر المفقودة: ${missingElements.join(', ')}`);
+  function showProjectForm() {
+    projectForm.classList.remove('hidden');
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectUser').value = '';
+    document.getElementById('projectUserRole').value = 'collaborator';
+    saveProjectBtn.onclick = saveProject;
+  }
+
+  // Pagination function
+  function displayPagination(totalPages, loadFunction) {
+    paginationElement.innerHTML = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = i;
+        pageButton.addEventListener('click', () => {
+            currentPage = i;
+            loadFunction();
+        });
+        if (i === currentPage) {
+            pageButton.classList.add('active');
+        }
+        paginationElement.appendChild(pageButton);
+    }
+  }
+
+  // Expense Management Functions
+
+  async function loadExpenses(projectId) {
+    showLoading();
+    expenseTableBody.innerHTML = '';
+    
+    try {
+        const expenses = await getCachedData(`expenses_${projectId}`, async () => {
+            const expensesSnapshot = await getDocs(query(
+                collection(db, `projects/${projectId}/expenses`),
+                orderBy("date", "desc"),
+                limit(itemsPerPage)
+            ));
+            return expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        });
+
+        if (expenses.length === 0) {
+            expensesList.innerHTML = '<p>لا توجد قيود لهذا المشروع</p>';
+        } else {
+            expenses.forEach(expense => {
+                const row = expenseTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${sanitizeInput(expense.description)}</td>
+                    <td>${formatCurrency(expense.amount, expense.type)}</td>
+                    <td>${formatDate(expense.date)}</td>
+                    <td>${expense.type === 'expense' ? 'مصروف' : 'إيداع'}</td>
+                    <td>${sanitizeInput(expense.paymentMethod)}</td>
+                    <td>${sanitizeInput(expense.addedBy)}</td>
+                    ${currentUserRole !== ROLES.VIEWER ? `
+                        <td>
+                            <button onclick="editExpense('${projectId}', '${expense.id}')" class="edit-btn">تعديل</button>
+                            <button onclick="deleteExpense('${projectId}', '${expense.id}')" class="delete-btn">حذف</button>
+                        </td>
+                    ` : ''}
+                `;
+            });
+        }
+
+        updateProjectSummary(projectId);
+        createExpenseChart(expenses);
+
+        const totalCount = await getCountFromServer(collection(db, `projects/${projectId}/expenses`));
+        const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
+        displayPagination(totalPages, () => loadExpenses(projectId));
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحميل القيود');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  async function saveExpense() {
+    if (currentUserRole === ROLES.VIEWER) {
+        alert('ليس لديك صلاحية لإضافة أو تعديل القيود');
         return;
     }
 
-    console.log('Form element values:', elementValues);
-
-    if (!elementValues.expenseDescription || !elementValues.expenseAmount || !elementValues.expenseDate) {
-        alert('الرجاء إدخال جميع البيانات المطلوبة');
+    if (!validateForm('expenseForm')) {
         return;
     }
 
-    const expensesRef = collection(db, `projects/${currentProjectId}/expenses`);
+    const expenseDescription = sanitizeInput(document.getElementById('expenseDescription').value);
+    const expenseAmount = parseFloat(document.getElementById('expenseAmount').value);
+    const expenseDate = sanitizeInput(document.getElementById('expenseDate').value);
+    const expenseType = sanitizeInput(document.getElementById('expenseType').value);
+    const paymentMethod = sanitizeInput(document.getElementById('paymentMethod').value);
+    const expenseVAT = document.getElementById('expenseVAT').value ? parseFloat(document.getElementById('expenseVAT').value) : null;
 
-    if (editingExpenseId) {
-        // Edit existing expense
-        await updateDoc(doc(expensesRef, editingExpenseId), {
-            description: elementValues.expenseDescription,
-            amount: parseFloat(elementValues.expenseAmount),
-            date: elementValues.expenseDate,
-            type: elementValues.expenseType,
-            paymentMethod: elementValues.paymentMethod,
-            vat: elementValues.expenseVAT ? parseFloat(elementValues.expenseVAT) : null,
-            addedBy: currentUser.uid
-        });
-        console.log('Expense edited successfully');
-        editingExpenseId = null; // Reset the editing ID
-    } else {
-        // Add new expense
-        await addDoc(expensesRef, {
-            description: elementValues.expenseDescription,
-            amount: parseFloat(elementValues.expenseAmount),
-            date: elementValues.expenseDate,
-            type: elementValues.expenseType,
-            paymentMethod: elementValues.paymentMethod,
-            vat: elementValues.expenseVAT ? parseFloat(elementValues.expenseVAT) : null,
-            addedBy: currentUser.uid
-        });
-        console.log('Expense saved successfully');
+    try {
+        showLoading();
+        const newExpense = {
+            description: expenseDescription,
+            amount: expenseAmount,
+            date: expenseDate,
+            type: expenseType,
+            paymentMethod: paymentMethod,
+            vat: expenseVAT,
+            addedBy: currentUser.displayName
+        };
+
+        const expensesRef = collection(db, `projects/${currentProjectId}/expenses`);
+        const docRef = await addDoc(expensesRef, newExpense);
+
+        delete cache[`expenses_${currentProjectId}`]; // Invalidate expenses cache for this project
+        expenseForm.classList.add('hidden');
+        await logActivity('add_expense', `Added expense ${docRef.id} to project ${currentProjectId}`);
+        loadExpenses(currentProjectId);
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في حفظ القيد');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  async function editExpense(projectId, expenseId) {
+    if (currentUserRole === ROLES.VIEWER) {
+        alert('ليس لديك صلاحية لتعديل القيود');
+        return;
     }
 
-    expenseForm.classList.add('hidden');
-    loadExpenses(currentProjectId);
-}
-
-async function editExpense(projectId, expenseId) {
-    console.log('Editing expense:', expenseId);
-    const expenseDoc = await getDoc(doc(db, `projects/${projectId}/expenses`, expenseId));
-    if (expenseDoc.exists()) {
-        const expense = expenseDoc.data();
-        // Load the expense details into the form
-        document.getElementById('expenseDescription').value = expense.description;
-        document.getElementById('expenseAmount').value = expense.amount;
-        document.getElementById('expenseDate').value = expense.date;
-        document.getElementById('expenseType').value = expense.type;
-        document.getElementById('paymentMethod').value = expense.paymentMethod;
-        document.getElementById('expenseVAT').value = expense.vat || '';
-
-        // Show the form and set the editing ID
-        expenseForm.classList.remove('hidden');
-        editingExpenseId = expenseId;
-    } else {
-        console.error('Expense not found');
-    }
-}
-
-function updateProjectSummary(projectId) {
-    const expensesRef = collection(db, `projects/${projectId}/expenses`);
-    let totalExpenses = 0;
-    let totalDeposits = 0;
-
-    getDocs(expensesRef).then((expensesSnapshot) => {
-        expensesSnapshot.forEach(expenseDoc => {
+    try {
+        showLoading();
+        const expenseDoc = await getDoc(doc(db, `projects/${projectId}/expenses`, expenseId));
+        if (expenseDoc.exists()) {
             const expense = expenseDoc.data();
+            document.getElementById('expenseDescription').value = expense.description;
+            document.getElementById('expenseAmount').value = expense.amount;
+            document.getElementById('expenseDate').value = expense.date;
+            document.getElementById('expenseType').value = expense.type;
+            document.getElementById('paymentMethod').value = expense.paymentMethod;
+            document.getElementById('expenseVAT').value = expense.vat || '';
+
+            expenseForm.classList.remove('hidden');
+            saveExpenseBtn.onclick = () => updateExpense(projectId, expenseId);
+        }
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحميل بيانات القيد');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  async function updateExpense(projectId, expenseId) {
+    if (!validateForm('expenseForm')) {
+        return;
+    }
+
+    const updatedExpense = {
+        description: sanitizeInput(document.getElementById('expenseDescription').value),
+        amount: parseFloat(document.getElementById('expenseAmount').value),
+        date: sanitizeInput(document.getElementById('expenseDate').value),
+        type: sanitizeInput(document.getElementById('expenseType').value),
+        paymentMethod: sanitizeInput(document.getElementById('paymentMethod').value),
+        vat: document.getElementById('expenseVAT').value ? parseFloat(document.getElementById('expenseVAT').value) : null,
+        addedBy: currentUser.displayName
+    };
+
+    try {
+        showLoading();
+        await updateDoc(doc(db, `projects/${projectId}/expenses`, expenseId), updatedExpense);
+        delete cache[`expenses_${projectId}`]; // Invalidate expenses cache for this project
+        expenseForm.classList.add('hidden');
+        await logActivity('update_expense', `Updated expense ${expenseId} in project ${projectId}`);
+        loadExpenses(projectId);
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحديث القيد');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  async function deleteExpense(projectId, expenseId) {
+    if (currentUserRole === ROLES.VIEWER) {
+        alert('ليس لديك صلاحية لحذف القيود');
+        return;
+    }
+
+    if (confirm('هل أنت متأكد من حذف هذا القيد؟')) {
+        try {
+            showLoading();
+            await deleteDoc(doc(db, `projects/${projectId}/expenses`, expenseId));
+            delete cache[`expenses_${projectId}`]; // Invalidate expenses cache for this project
+            await logActivity('delete_expense', `Deleted expense ${expenseId} from project ${projectId}`);
+            loadExpenses(projectId);
+        } catch (error) {
+            handleFirebaseError(error, 'فشل في حذف القيد');
+        } finally {
+            hideLoading();
+        }
+    }
+  }
+
+  function updateProjectSummary(projectId) {
+    getCachedData(`expenses_${projectId}`, async () => {
+        const expensesSnapshot = await getDocs(collection(db, `projects/${projectId}/expenses`));
+        return expensesSnapshot.docs.map(doc => doc.data());
+    }).then(expenses => {
+        let totalExpenses = 0;
+        let totalDeposits = 0;
+
+        expenses.forEach(expense => {
             if (expense.type === 'expense') {
                 totalExpenses += expense.amount + (expense.vat || 0);
             } else {
@@ -369,99 +670,206 @@ function updateProjectSummary(projectId) {
         const remainingBalance = totalDeposits - totalExpenses;
 
         if (totalsElement) {
-            totalsElement.innerHTML = `إجمالي الإيداعات: ${totalDeposits.toFixed(2)} ر.س<br>إجمالي المصروفات: ${totalExpenses.toFixed(2)} ر.س`;
-        } else {
-            console.error('totalsElement not found');
+            totalsElement.innerHTML = `
+                إجمالي الإيداعات: ${formatCurrency(totalDeposits, 'deposit')}<br>
+                إجمالي المصروفات: ${formatCurrency(totalExpenses, 'expense')}
+            `;
         }
 
         if (remainingElement) {
-            remainingElement.innerHTML = `الرصيد المتبقي: ${remainingBalance.toFixed(2)} ر.س`;
-        } else {
-            console.error('remainingElement not found');
+            remainingElement.innerHTML = `الرصيد المتبقي: ${formatCurrency(remainingBalance, remainingBalance >= 0 ? 'deposit' : 'expense')}`;
         }
     });
-}
+  }
 
-async function addUserToProject() {
-    if (currentUserRole !== 'admin') {
-        alert('ليس لديك صلاحية لإضافة مستخدم للمشروع');
-        return;
+  function showExpenseForm() {
+    expenseForm.classList.remove('hidden');
+    document.getElementById('expenseDescription').value = '';
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('expenseDate').value = '';
+    document.getElementById('expenseType').value = 'expense';
+    document.getElementById('paymentMethod').value = '';
+    document.getElementById('expenseVAT').value = '';
+    saveExpenseBtn.onclick = saveExpense;
+  }
+
+  // Utility Functions
+
+  function sanitizeInput(input) {
+    if (typeof input !== 'string') {
+        return input;
     }
-    const newUser = document.getElementById('newProjectUser').value;
-    const newUserRole = document.getElementById('newProjectUserRole').value;
+    let sanitized = input.replace(/<[^>]*>/g, '');
+    sanitized = sanitized
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    return sanitized.trim();
+  }
 
-    if (!newUser) {
-        alert('الرجاء إدخال اسم المستخدم');
-        return;
-    }
+  const arabicNumberFormatter = new Intl.NumberFormat('ar-SA');
 
-    const projectDoc = await getDoc(doc(db, "projects", currentProjectId));
-    if (projectDoc.exists()) {
-        const project = projectDoc.data();
-        if (!project.users) {
-            project.users = [];
-        }
-        project.users.push(newUser);
-        await updateDoc(doc(db, "projects", currentProjectId), { users: project.users });
+  function formatNumber(number) {
+    return arabicNumberFormatter.format(number);
+  }
 
-        const userRef = doc(db, "users", newUser);
-        await setDoc(userRef, { role: newUserRole }, { merge: true });
+  function formatCurrency(amount, type) {
+    const formattedAmount = arabicNumberFormatter.format(Math.abs(amount));
+    const className = type === 'expense' ? 'negative-amount' : 'positive-amount';
+    const sign = type === 'expense' ? '-' : '+';
+    return `<span class="${className}">${sign} ${formattedAmount} ر.س</span>`;
+  }
 
-        if (addUserForm) {
-            addUserForm.classList.add('hidden');
+  function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('ar-SA', options);
+  }
+
+  function validateForm(formId) {
+    const form = document.getElementById(formId);
+    const inputs = form.querySelectorAll('input, select');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (input.hasAttribute('required') && !input.value.trim()) {
+            isValid = false;
+            showError(input, 'هذا الحقل مطلوب');
+        } else if (input.type === 'number' && input.value && isNaN(input.value)) {
+            isValid = false;
+            showError(input, 'يرجى إدخال رقم صحيح');
         } else {
-            console.error('addUserForm element not found');
+            hideError(input);
+        }
+    });
+
+    return isValid;
+  }
+
+  function showError(input, message) {
+    const errorElement = input.nextElementSibling;
+    if (errorElement && errorElement.classList.contains('error-message')) {
+        errorElement.textContent = message;
+    } else {
+        const error = document.createElement('div');
+        error.className = 'error-message';
+        error.textContent = message;
+        input.parentNode.insertBefore(error, input.nextSibling);
+    }
+    input.classList.add('error');
+  }
+
+  function hideError(input) {
+    const errorElement = input.nextElementSibling;
+    if (errorElement && errorElement.classList.contains('error-message')) {
+        errorElement.remove();
+    }
+    input.classList.remove('error');
+  }
+
+  async function getCachedData(key, fetchFunction) {
+    const now = Date.now();
+    if (cache[key] && now - cache[key].timestamp < CACHE_DURATION) {
+        return cache[key].data;
+    }
+
+    const data = await fetchFunction();
+    cache[key] = { data, timestamp: now };
+    return data;
+  }
+
+  // Data Export Functionality
+
+  function convertToCSV(expenses) {
+    const headers = ['التاريخ', 'الوصف', 'المبلغ', 'النوع', 'طريقة الدفع', 'ضريبة القيمة المضافة', 'أضيف بواسطة'];
+    let csvContent = headers.join(',') + '\n';
+
+    expenses.forEach(expense => {
+        const row = [
+            expense.date,
+            `"${expense.description.replace(/"/g, '""')}"`, // Escape quotes in description
+            expense.amount,
+            expense.type === 'expense' ? 'مصروف' : 'إيداع',
+            expense.paymentMethod,
+            expense.vat || '',
+            expense.addedBy
+        ];
+        csvContent += row.join(',') + '\n';
+    });
+
+    return csvContent;
+  }
+
+  function downloadCSV(content, fileName) {
+    const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + content);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function exportProjectExpenses(projectId, projectName) {
+    if (currentUserRole !== ROLES.ADMIN) {
+        alert('فقط المسؤول يمكنه تصدير بيانات المشروع');
+        return;
+    }
+
+    showLoading();
+
+    try {
+        const expensesSnapshot = await getDocs(collection(db, `projects/${projectId}/expenses`));
+        const expenses = expensesSnapshot.docs.map(doc => doc.data());
+
+        if (expenses.length === 0) {
+            alert('لا توجد مصروفات لتصديرها');
+            hideLoading();
+            return;
         }
 
-        alert('تمت إضافة المستخدم بنجاح');
-        loadProjects();  // Refresh the project list to show the new user
-    }
-}
+        const csvContent = convertToCSV(expenses);
+        const fileName = `${projectName}_expenses_${new Date().toISOString().split('T')[0]}.csv`;
+        downloadCSV(csvContent, fileName);
 
-// Initialize the app
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        currentUser = user;
-        getDoc(doc(db, "users", user.uid)).then(docSnapshot => {
-            if (docSnapshot.exists()) {
-                currentUserRole = docSnapshot.data().role;
-                if (currentUserRole === 'admin') {
-                    showDashboard();
-                } else {
-                    // Find and view the user's project
-                    getDocs(query(collection(db, "projects"), where("users", "array-contains", user.uid)))
-                        .then(querySnapshot => {
-                            if (!querySnapshot.empty) {
-                                viewProject(querySnapshot.docs[0].id);
-                            } else {
-                                alert('لم يتم تعيين المستخدم لأي مشروع');
-                                handleLogout();
-                            }
-                        });
-                }
-            }
+        await logActivity('export_expenses', `Exported expenses for project ${projectName}`);
+
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تصدير المصروفات');
+    } finally {
+        hideLoading();
+    }
+  }
+
+  // View Activity Log (for admin only)
+  async function viewActivityLog() {
+    if (currentUserRole !== ROLES.ADMIN) {
+        alert('فقط المسؤول يمكنه عرض سجل النشاط');
+        return;
+    }
+
+    try {
+        showLoading();
+        const logSnapshot = await getDocs(query(collection(db, "activityLog"), orderBy("timestamp", "desc"), limit(100)));
+        let logHTML = '<h2>سجل النشاط</h2><ul>';
+
+        logSnapshot.forEach(doc => {
+            const log = doc.data();
+            logHTML += `<li>${formatDate(log.timestamp.toDate())} - ${log.user}: ${log.action} - ${log.details}</li>`;
         });
-    } else {
-        loginSection.classList.remove('hidden');
-        dashboard.classList.add('hidden');
-        projectPage.classList.add('hidden');
-    }
-});
 
-// Event listeners and other initialization code
-document.addEventListener('DOMContentLoaded', () => {
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
+        logHTML += '</ul>';
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+        logContainer.innerHTML = logHTML;
+        logContainer.style.display = 'block';
+    } catch (error) {
+        handleFirebaseError(error, 'فشل في تحميل سجل النشاط');
+    } finally {
+        hideLoading();
     }
+  }
 
-    // Add a logout button on all pages
-    const logoutButton = document.createElement('button');
-    logoutButton.textContent = 'تسجيل الخروج';
-    logoutButton.classList.add('logout-btn');
-    logoutButton.addEventListener('click', handleLogout);
-    document.body.prepend(logoutButton);  // Add the button at the top of the body
-});
+  // Initialize the application
+  initializeApp();
+</script>
