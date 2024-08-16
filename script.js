@@ -21,6 +21,57 @@ const totalsElement = document.getElementById('totals');
 const remainingElement = document.getElementById('remaining');
 const actionsColumn = document.getElementById('actionsColumn');
 
+// Ensure elements exist before adding event listeners
+if (loginForm) {
+    loginForm.addEventListener('submit', handleLogin);
+}
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', handleLogout);
+}
+
+if (addProjectBtn) {
+    addProjectBtn.addEventListener('click', () => projectForm.classList.remove('hidden'));
+}
+
+if (saveProjectBtn) {
+    saveProjectBtn.addEventListener('click', saveProject);
+}
+
+if (addExpenseBtn) {
+    addExpenseBtn.addEventListener('click', () => {
+        if (expenseForm) {
+            console.log('Add Expense button clicked');
+            expenseForm.classList.remove('hidden');
+            console.log('Expense form visibility:', !expenseForm.classList.contains('hidden'));
+        } else {
+            console.error('expenseForm element not found');
+        }
+    });
+}
+
+if (saveExpenseBtn) {
+    saveExpenseBtn.addEventListener('click', saveExpense);
+}
+
+if (backToDashboardBtn) {
+    backToDashboardBtn.addEventListener('click', showDashboard);
+}
+
+if (addUserBtn) {
+    addUserBtn.addEventListener('click', () => {
+        if (addUserForm) {
+            addUserForm.classList.remove('hidden');
+        } else {
+            console.error('addUserForm element not found');
+        }
+    });
+}
+
+if (saveNewUserBtn) {
+    saveNewUserBtn.addEventListener('click', addUserToProject);
+}
+
 // Global variables
 let currentUser = '';
 let currentProjectId = '';
@@ -478,42 +529,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
-// Event Listeners
-if (loginForm) {
-    loginForm.addEventListener('submit', handleLogin);
-}
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
-}
-if (addProjectBtn) {
-    addProjectBtn.addEventListener('click', () => projectForm.classList.remove('hidden'));
-}
-if (saveProjectBtn) {
-    saveProjectBtn.addEventListener('click', saveProject);
-}
-if (addExpenseBtn) {
-    addExpenseBtn.addEventListener('click', () => {
-        console.log('Add Expense button clicked');
-        expenseForm.classList.remove('hidden');
-        console.log('Expense form visibility:', !expenseForm.classList.contains('hidden'));
-    });
-}
-if (saveExpenseBtn) {
-    saveExpenseBtn.addEventListener('click', saveExpense);
-}
-if (backToDashboardBtn) {
-    backToDashboardBtn.addEventListener('click', showDashboard);
-}
-if (addUserBtn) {
-    addUserBtn.addEventListener('click', () => {
-        if (addUserForm) {
-            addUserForm.classList.remove('hidden');
-        } else {
-            console.error('addUserForm element not found');
-        }
-    });
-}
-if (saveNewUserBtn) {
-    saveNewUserBtn.addEventListener('click', addUserToProject);
-}
