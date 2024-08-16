@@ -9,7 +9,9 @@
 <body>
     <div class="container">
         <img src="logo.png" alt="شعار صفوة الجود" class="logo">
+
         <h1 id="صفوة-الجود-للمقاولات" class="business-name">صفوة الجود للمقاولات</h1>
+
         <h2 id="متتبع-المصروفات" class="page-title">متتبع المصروفات</h2>
 
         <main role="main">
@@ -17,13 +19,12 @@
                 <h3>تسجيل الدخول</h3>
                 <form id="loginForm">
                     <input type="text" id="username" placeholder="اسم المستخدم" required>
-                    <button type="submit">دخول</button>
+                    <button type="submit" id="loginButton">دخول</button>
                 </form>
             </section>
 
             <section id="dashboard" class="section hidden">
                 <h3>لوحة التحكم</h3>
-                <input type="text" id="projectSearch" placeholder="البحث عن مشروع">
                 <div id="projectsList"></div>
                 <button id="addProjectBtn">إضافة مشروع جديد</button>
                 <form id="projectForm" class="hidden">
@@ -49,27 +50,30 @@
                                 <th>التاريخ</th>
                                 <th>طريقة الدفع</th>
                                 <th>أضيف بواسطة</th>
-                                <th id="actionsColumn">الإجراءات</th>
+                                <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                 </div>
+
                 <div id="summary">
                     <div id="totals"></div>
                     <div id="remaining"></div>
                 </div>
+
                 <div class="button-group">
                     <button id="addExpenseBtn">أضف قيد</button>
-                    <button id="addUserBtn" class="hidden">إضافة مستخدم للمشروع</button>
-                    <button id="exportBtn" class="hidden">تصدير تقرير القيود</button>
-                    <button id="backToDashboardBtn" class="hidden">العودة للوحة المشاريع</button>
+                    <button id="addUserBtn">إضافة مستخدم للمشروع</button>
+                    <button id="exportButton">تصدير تقرير القيود</button>
+                    <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
                 </div>
+
                 <form id="expenseForm" class="hidden">
                     <input type="text" id="expenseDescription" placeholder="الوصف" required>
                     <input type="number" id="expenseAmount" placeholder="المبلغ" required>
                     <input type="date" id="expenseDate" required>
-                    <select id="expenseType" required>
+                    <select id="expenseType">
                         <option value="expense">مصروف</option>
                         <option value="deposit">إيداع</option>
                     </select>
@@ -77,6 +81,7 @@
                     <input type="number" id="expenseVAT" placeholder="ضريبة القيمة المضافة">
                     <button type="submit" id="saveExpenseBtn">حفظ القيد</button>
                 </form>
+
                 <form id="addUserForm" class="hidden">
                     <input type="text" id="newProjectUser" placeholder="اسم المستخدم الجديد" required>
                     <select id="newProjectUserRole">
@@ -94,7 +99,6 @@
     <button id="logoutBtn" class="logout-btn hidden">تسجيل الخروج</button>
     <div id="loadingIndicator" class="hidden">جاري التحميل...</div>
 
-    <!-- External JavaScript Files -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>
