@@ -1,22 +1,23 @@
 // Import Firebase modules
-import { auth, db } from './firebase-config.js';
-import { signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { 
-    collection, 
-    addDoc, 
-    getDocs, 
-    doc, 
-    updateDoc, 
-    deleteDoc, 
-    query, 
-    where, 
-    orderBy, 
-    limit, 
-    serverTimestamp,
-    getCountFromServer,
-    setDoc,
-    getDoc
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getDatabase, ref, push, set, get, update, remove, query, orderByChild, limitToFirst, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDOkIghRKHFsP1WVbm_IzrnVjM2a0U62cs",
+  authDomain: "expense-tracker-412b2.firebaseapp.com",
+  databaseURL: "https://expense-tracker-412b2-default-rtdb.firebaseio.com", // Make sure to add this line
+  projectId: "expense-tracker-412b2",
+  storageBucket: "expense-tracker-412b2.appspot.com",
+  messagingSenderId: "802525395906",
+  appId: "1:802525395906:web:fd6e26ab26388cfd59b45b"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
 // Global variables and constants
 let currentUser = null;
@@ -82,9 +83,9 @@ function initializeApp() {
     auth.onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
-            getDoc(doc(db, "users", user.uid)).then(docSnapshot => {
-                if (docSnapshot.exists()) {
-                    currentUserRole = docSnapshot.data().role;
+            get(ref(db, `users/${user.uid}`)).then(snapshot => {
+                if (snapshot.exists()) {
+                    currentUserRole = snapshot.val().role;
                     if (currentUserRole === ROLES.ADMIN) {
                         showDashboard();
                     } else {
@@ -122,9 +123,9 @@ async function handleLogin(e) {
         const userCredential = await signInAnonymously(auth);
         currentUser = userCredential.user;
 
-        const userDoc = await getDoc(doc(db, "users", username));
-        if (userDoc.exists()) {
-            currentUserRole = userDoc.data().role;
+        const userSnapshot = await get(ref(db, `users/${username}`));
+        if (userSnapshot.exists()) {
+            currentUserRole = userSnapshot.val().role;
             currentUser.displayName = username;
 
             if (currentUserRole === ROLES.ADMIN) {
@@ -159,9 +160,10 @@ async function handleLogout() {
 
 async function findAndViewUserProject(userId) {
     try {
-        const userProjects = await getDocs(query(collection(db, "projects"), where("users", "array-contains", userId)));
-        if (!userProjects.empty) {
-            viewProject(userProjects.docs[0].id);
+        const projectsSnapshot = await get(query(ref(db, 'projects'), orderByChild('users'), limitToFirst(1)));
+        if (projectsSnapshot.exists()) {
+            const projectId = Object.keys(projectsSnapshot.val())[0];
+            viewProject(projectId);
         } else {
             throw new Error('لم يتم تعيين المستخدم لأي مشروع');
         }
@@ -187,17 +189,16 @@ async function addUserToProject() {
 
     try {
         showLoading();
-        const projectDoc = await getDoc(doc(db, "projects", currentProjectId));
-        if (projectDoc.exists()) {
-            const project = projectDoc.data();
+        const projectSnapshot = await get(ref(db, `projects/${currentProjectId}`));
+        if (projectSnapshot.exists()) {
+            const project = projectSnapshot.val();
             if (!project.users) {
                 project.users = [];
             }
             project.users.push(newUser);
-            await updateDoc(doc(db, "projects", currentProjectId), { users: project.users });
+            await update(ref(db, `projects/${currentProjectId}`), { users: project.users });
 
-            const userRef = doc(db, "users", newUser);
-            await setDoc(userRef, { role: newUserRole }, { merge: true });
+            await set(ref(db, `users/${newUser}`), { role: newUserRole });
 
             addUserForm.classList.add('hidden');
             alert('تمت إضافة المستخدم بنجاح');
@@ -251,7 +252,8 @@ async function logActivity(action, details) {
     if (currentUserRole !== ROLES.ADMIN) return;
 
     try {
-        await addDoc(collection(db, "activityLog"), {
+        const newLogRef = push(ref(db, 'activityLog'));
+        await set(newLogRef, {
             timestamp: serverTimestamp(),
             user: currentUser.displayName,
             action: action,
@@ -271,13 +273,10 @@ async function loadProjects() {
     projectsList.innerHTML = '';
 
     try {
-        const projects = await getCachedData('projects', async () => {
-            const projectsSnapshot = await getDocs(query(
-                collection(db, "projects"),
-                orderBy("name"),
-                limit(itemsPerPage)
-            ));
-            return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const projectsSnapshot = await get(query(ref(db, 'projects'), orderByChild('name'), limitToFirst(itemsPerPage)));
+        const projects = [];
+        projectsSnapshot.forEach((childSnapshot) => {
+            projects.push({ id: childSnapshot.key, ...childSnapshot.val() });
         });
 
         if (projects.length === 0) {
@@ -289,10 +288,8 @@ async function loadProjects() {
             });
         }
 
-        const totalCount = await getCountFromServer(collection(db, "projects"));
-        const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
-        // Pagination element not defined in HTML, so we can comment or remove this line
-        // displayPagination(totalPages, loadProjects);
+        // For pagination, you'd need to implement a custom solution or use server-side pagination
+        // as Realtime Database doesn't have a direct equivalent to Firestore's getCountFromServer
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل المشاريع');
     } finally {
@@ -330,19 +327,18 @@ async function saveProject() {
 
     try {
         showLoading();
+        const newProjectRef = push(ref(db, 'projects'));
         const newProject = {
             name: projectName,
             users: projectUser ? [projectUser] : []
         };
 
-        const docRef = await addDoc(collection(db, "projects"), newProject);
+        await set(newProjectRef, newProject);
 
         if (projectUser) {
-            const userRef = doc(db, "users", projectUser);
-            await setDoc(userRef, { role: projectUserRole }, { merge: true });
+            await set(ref(db, `users/${projectUser}`), { role: projectUserRole });
         }
 
-        delete cache['projects'];
         projectForm.classList.add('hidden');
         await logActivity('create_project', `Created project ${projectName}`);
         loadProjects();
@@ -361,9 +357,9 @@ async function editProject(projectId) {
 
     try {
         showLoading();
-        const projectDoc = await getDoc(doc(db, "projects", projectId));
-        if (projectDoc.exists()) {
-            const project = projectDoc.data();
+        const projectSnapshot = await get(ref(db, `projects/${projectId}`));
+        if (projectSnapshot.exists()) {
+            const project = projectSnapshot.val();
             document.getElementById('projectName').value = project.name;
             document.getElementById('projectUser').value = project.users && project.users.length > 0 ? project.users[0] : '';
             document.getElementById('projectUserRole').value = 'collaborator';
@@ -392,12 +388,10 @@ async function updateProject(projectId) {
             name: updatedName,
             users: updatedUser ? [updatedUser] : []
         };
-        await updateDoc(doc(db, "projects", projectId), updatedProject);
+        await update(ref(db, `projects/${projectId}`), updatedProject);
         if (updatedUser) {
-            const userRef = doc(db, "users", updatedUser);
-            await setDoc(userRef, { role: updatedRole }, { merge: true });
+            await set(ref(db, `users/${updatedUser}`), { role: updatedRole });
         }
-        delete cache['projects'];
         projectForm.classList.add('hidden');
         await logActivity('update_project', `Updated project ${updatedName}`);
         loadProjects();
@@ -417,8 +411,7 @@ async function deleteProject(projectId) {
     if (confirm('هل أنت متأكد من حذف هذا المشروع؟')) {
         try {
             showLoading();
-            await deleteDoc(doc(db, "projects", projectId));
-            delete cache['projects'];
+            await remove(ref(db, `projects/${projectId}`));
             await logActivity('delete_project', `Deleted project ${projectId}`);
             loadProjects();
         } catch (error) {
@@ -457,13 +450,10 @@ async function loadExpenses(projectId) {
     expenseTableBody.innerHTML = '';
 
     try {
-        const expenses = await getCachedData(`expenses_${projectId}`, async () => {
-            const expensesSnapshot = await getDocs(query(
-                collection(db, `projects/${projectId}/expenses`),
-                orderBy("date", "desc"),
-                limit(itemsPerPage)
-            ));
-            return expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const expensesSnapshot = await get(query(ref(db, `projects/${projectId}/expenses`), orderByChild('date'), limitToFirst(itemsPerPage)));
+        const expenses = [];
+        expensesSnapshot.forEach((childSnapshot) => {
+            expenses.push({ id: childSnapshot.key, ...childSnapshot.val() });
         });
 
         if (expenses.length === 0) {
@@ -490,10 +480,7 @@ async function loadExpenses(projectId) {
 
         updateProjectSummary(projectId);
 
-        const totalCount = await getCountFromServer(collection(db, `projects/${projectId}/expenses`));
-        const totalPages = Math.ceil(totalCount.data().count / itemsPerPage);
-        // Pagination element not defined in HTML, so we can comment or remove this line
-        // displayPagination(totalPages, () => loadExpenses(projectId));
+        // For pagination, you'd need to implement a custom solution
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل القيود');
     } finally {
@@ -530,12 +517,11 @@ async function saveExpense() {
             addedBy: currentUser.displayName
         };
 
-        const expensesRef = collection(db, `projects/${currentProjectId}/expenses`);
-        const docRef = await addDoc(expensesRef, newExpense);
+        const newExpenseRef = push(ref(db, `projects/${currentProjectId}/expenses`));
+        await set(newExpenseRef, newExpense);
 
-        delete cache[`expenses_${currentProjectId}`];
         expenseForm.classList.add('hidden');
-        await logActivity('add_expense', `Added expense ${docRef.id} to project ${currentProjectId}`);
+        await logActivity('add_expense', `Added expense ${newExpenseRef.key} to project ${currentProjectId}`);
         loadExpenses(currentProjectId);
     } catch (error) {
         handleFirebaseError(error, 'فشل في حفظ القيد');
@@ -552,9 +538,9 @@ async function editExpense(projectId, expenseId) {
 
     try {
         showLoading();
-        const expenseDoc = await getDoc(doc(db, `projects/${projectId}/expenses`, expenseId));
-        if (expenseDoc.exists()) {
-            const expense = expenseDoc.data();
+        const expenseSnapshot = await get(ref(db, `projects/${projectId}/expenses/${expenseId}`));
+        if (expenseSnapshot.exists()) {
+            const expense = expenseSnapshot.val();
             document.getElementById('expenseDescription').value = expense.description;
             document.getElementById('expenseAmount').value = expense.amount;
             document.getElementById('expenseDate').value = expense.date;
@@ -589,8 +575,7 @@ async function updateExpense(projectId, expenseId) {
 
     try {
         showLoading();
-        await updateDoc(doc(db, `projects/${projectId}/expenses`, expenseId), updatedExpense);
-        delete cache[`expenses_${projectId}`];
+        await update(ref(db, `projects/${projectId}/expenses/${expenseId}`), updatedExpense);
         expenseForm.classList.add('hidden');
         await logActivity('update_expense', `Updated expense ${expenseId} in project ${projectId}`);
         loadExpenses(projectId);
@@ -610,8 +595,7 @@ async function deleteExpense(projectId, expenseId) {
     if (confirm('هل أنت متأكد من حذف هذا القيد؟')) {
         try {
             showLoading();
-            await deleteDoc(doc(db, `projects/${projectId}/expenses`, expenseId));
-            delete cache[`expenses_${projectId}`];
+            await remove(ref(db, `projects/${projectId}/expenses/${expenseId}`));
             await logActivity('delete_expense', `Deleted expense ${expenseId} from project ${projectId}`);
             loadExpenses(projectId);
         } catch (error) {
@@ -623,14 +607,12 @@ async function deleteExpense(projectId, expenseId) {
 }
 
 function updateProjectSummary(projectId) {
-    getCachedData(`expenses_${projectId}`, async () => {
-        const expensesSnapshot = await getDocs(collection(db, `projects/${projectId}/expenses`));
-        return expensesSnapshot.docs.map(doc => doc.data());
-    }).then(expenses => {
+    get(ref(db, `projects/${projectId}/expenses`)).then(snapshot => {
         let totalExpenses = 0;
         let totalDeposits = 0;
 
-        expenses.forEach(expense => {
+        snapshot.forEach(childSnapshot => {
+            const expense = childSnapshot.val();
             if (expense.type === 'expense') {
                 totalExpenses += expense.amount + (expense.vat || 0);
             } else {
@@ -664,14 +646,13 @@ function showExpenseForm() {
     saveExpenseBtn.onclick = saveExpense;
 }
 
-// View a specific project
 async function viewProject(projectId) {
     try {
         showLoading();
         currentProjectId = projectId;
-        const projectDoc = await getDoc(doc(db, "projects", projectId));
-        if (projectDoc.exists()) {
-            const project = projectDoc.data();
+        const projectSnapshot = await get(ref(db, `projects/${projectId}`));
+        if (projectSnapshot.exists()) {
+            const project = projectSnapshot.val();
             document.getElementById('projectTitle').textContent = project.name;
             projectPage.classList.remove('hidden');
             dashboard.classList.add('hidden');
@@ -761,17 +742,6 @@ function hideError(input) {
     input.classList.remove('error');
 }
 
-async function getCachedData(key, fetchFunction) {
-    const now = Date.now();
-    if (cache[key] && now - cache[key].timestamp < CACHE_DURATION) {
-        return cache[key].data;
-    }
-
-    const data = await fetchFunction();
-    cache[key] = { data, timestamp: now };
-    return data;
-}
-
 // Data Export Functionality
 
 function convertToCSV(expenses) {
@@ -813,8 +783,11 @@ async function exportProjectExpenses(projectId, projectName) {
     showLoading();
 
     try {
-        const expensesSnapshot = await getDocs(collection(db, `projects/${projectId}/expenses`));
-        const expenses = expensesSnapshot.docs.map(doc => doc.data());
+        const expensesSnapshot = await get(ref(db, `projects/${projectId}/expenses`));
+        const expenses = [];
+        expensesSnapshot.forEach(childSnapshot => {
+            expenses.push(childSnapshot.val());
+        });
 
         if (expenses.length === 0) {
             alert('لا توجد مصروفات لتصديرها');
@@ -844,12 +817,12 @@ async function viewActivityLog() {
 
     try {
         showLoading();
-        const logSnapshot = await getDocs(query(collection(db, "activityLog"), orderBy("timestamp", "desc"), limit(100)));
+        const logSnapshot = await get(query(ref(db, 'activityLog'), orderByChild('timestamp'), limitToFirst(100)));
         let logHTML = '<h2>سجل النشاط</h2><ul>';
 
-        logSnapshot.forEach(doc => {
-            const log = doc.data();
-            logHTML += `<li>${formatDate(log.timestamp.toDate())} - ${log.user}: ${log.action} - ${log.details}</li>`;
+        logSnapshot.forEach(childSnapshot => {
+            const log = childSnapshot.val();
+            logHTML += `<li>${formatDate(new Date(log.timestamp))} - ${log.user}: ${log.action} - ${log.details}</li>`;
         });
 
         logHTML += '</ul>';
@@ -865,3 +838,4 @@ async function viewActivityLog() {
 
 // Initialize the application
 initializeApp();
+
