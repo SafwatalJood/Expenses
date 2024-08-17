@@ -39,12 +39,34 @@ const ADMIN_USERNAME = 'fah44944';
 const loginSection = document.getElementById('loginSection');
 const dashboard = document.getElementById('dashboard');
 const logoutBtn = document.getElementById('logoutBtn');
-// ... (other DOM elements)
+const projectPage = document.getElementById('projectPage');
+const projectsList = document.getElementById('projectsList');
+const projectForm = document.getElementById('projectForm');
+const saveProjectBtn = document.getElementById('saveProjectBtn');
+const expenseTableBody = document.querySelector('#expenseTable tbody');
+const expenseForm = document.getElementById('expenseForm');
+const saveExpenseBtn = document.getElementById('saveExpenseBtn');
+const addUserForm = document.getElementById('addUserForm');
+const logContainer = document.getElementById('activityLogContainer');
+const totalsElement = document.getElementById('totals');
+const remainingElement = document.getElementById('remaining');
+const loadingIndicator = document.getElementById('loadingIndicator');
 
+// Ensure these functions are globally accessible
 window.showDashboard = showDashboard;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
-// ... (other global functions)
+window.showExpenseForm = showExpenseForm;
+window.saveExpense = saveExpense;
+window.editExpense = editExpense;
+window.deleteExpense = deleteExpense;
+window.showProjectForm = showProjectForm;
+window.saveProject = saveProject;
+window.editProject = editProject;
+window.deleteProject = deleteProject;
+window.viewProject = viewProject;
+window.addUserToProject = addUserToProject;
+window.exportProjectExpenses = exportProjectExpenses;
 
 // Initialize the application
 auth.onAuthStateChanged((user) => {
@@ -62,6 +84,19 @@ auth.onAuthStateChanged((user) => {
         showLoginForm();
     }
 });
+
+function showDashboard() {
+    loginSection.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    projectPage.classList.add('hidden');
+    loadProjects();
+}
+
+function showLoginForm() {
+    loginSection.classList.remove('hidden');
+    dashboard.classList.add('hidden');
+    projectPage.classList.add('hidden');
+}
 
 async function handleLogin(e) {
     e.preventDefault();
@@ -162,8 +197,6 @@ async function addUserToProject() {
 function showAddUserForm() {
     addUserForm.classList.remove('hidden');
 }
-
-// Utility functions for loading and error handling
 
 function showLoading() {
     loadingIndicator.classList.remove('hidden');
@@ -369,29 +402,6 @@ async function deleteProject(projectId) {
     }
 }
 
-function handleProjectSearch() {
-    const searchTerm = projectSearch.value.toLowerCase();
-    const projectElements = document.querySelectorAll('.project-block');
-    projectElements.forEach(element => {
-        const projectName = element.querySelector('h4').textContent.toLowerCase();
-        if (projectName.includes(searchTerm)) {
-            element.style.display = '';
-        } else {
-            element.style.display = 'none';
-        }
-    });
-}
-
-function showProjectForm() {
-    projectForm.classList.remove('hidden');
-    document.getElementById('projectName').value = '';
-    document.getElementById('projectUser').value = '';
-    document.getElementById('projectUserRole').value = 'collaborator';
-    saveProjectBtn.onclick = saveProject;
-}
-
-// Expense Management Functions
-
 async function loadExpenses(projectId) {
     showLoading();
     expenseTableBody.innerHTML = '';
@@ -404,7 +414,7 @@ async function loadExpenses(projectId) {
         });
 
         if (expenses.length === 0) {
-            expensesList.innerHTML = '<p>لا توجد قيود لهذا المشروع</p>';
+            expenseTableBody.innerHTML = '<p>لا توجد قيود لهذا المشروع</p>';
         } else {
             expenses.forEach(expense => {
                 const row = expenseTableBody.insertRow();
@@ -613,8 +623,6 @@ async function viewProject(projectId) {
     }
 }
 
-// Utility Functions
-
 function sanitizeInput(input) {
     if (typeof input !== 'string') {
         return input;
@@ -688,8 +696,6 @@ function hideError(input) {
     input.classList.remove('error');
 }
 
-// Data Export Functionality
-
 function convertToCSV(expenses) {
     const headers = ['التاريخ', 'الوصف', 'المبلغ', 'النوع', 'طريقة الدفع', 'ضريبة القيمة المضافة', 'أضيف بواسطة'];
     let csvContent = headers.join(',') + '\n';
@@ -754,7 +760,6 @@ async function exportProjectExpenses(projectId, projectName) {
     }
 }
 
-// View Activity Log (for admin only)
 async function viewActivityLog() {
     if (currentUserRole !== ROLES.ADMIN) {
         alert('فقط المسؤول يمكنه عرض سجل النشاط');
