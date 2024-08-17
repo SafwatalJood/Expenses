@@ -142,13 +142,12 @@ async function handleLogout() {
 
 async function findAndViewUserProject(userId) {
     try {
-        // Adjusted the query to correctly filter by user ID.
         const userProjectsQuery = query(ref(db, 'projects'), orderByChild(`users/${userId}`), equalTo(true));
         const projectsSnapshot = await get(userProjectsQuery);
 
         if (projectsSnapshot.exists()) {
             const projects = projectsSnapshot.val();
-            const projectId = Object.keys(projects)[0]; // Get the first project ID for this user
+            const projectId = Object.keys(projects)[0];
             if (projectId) {
                 viewProject(projectId);
             } else {
@@ -263,21 +262,24 @@ async function loadProjects() {
     projectsList.innerHTML = '';
 
     try {
-        const projectsSnapshot = await get(query(ref(db, 'projects'), orderByChild('name'), limitToFirst(itemsPerPage)));
-        const projects = [];
-        projectsSnapshot.forEach((childSnapshot) => {
-            projects.push({ id: childSnapshot.key, ...childSnapshot.val() });
-        });
-
-        if (projects.length === 0) {
-            projectsList.innerHTML = '<p>لا توجد مشاريع حالياً</p>';
-        } else {
-            projects.forEach(project => {
-                const projectElement = createProjectElement(project);
-                projectsList.appendChild(projectElement);
+        const projectsSnapshot = await get(query(ref(db, 'projects'), orderByChild('name')));
+        if (projectsSnapshot.exists()) {
+            const projects = [];
+            projectsSnapshot.forEach((childSnapshot) => {
+                projects.push({ id: childSnapshot.key, ...childSnapshot.val() });
             });
-        }
 
+            if (projects.length === 0) {
+                projectsList.innerHTML = '<p>لا توجد مشاريع حالياً</p>';
+            } else {
+                projects.forEach(project => {
+                    const projectElement = createProjectElement(project);
+                    projectsList.appendChild(projectElement);
+                });
+            }
+        } else {
+            projectsList.innerHTML = '<p>لا توجد مشاريع حالياً</p>';
+        }
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل المشاريع');
     } finally {
