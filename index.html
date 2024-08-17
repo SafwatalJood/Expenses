@@ -1,334 +1,100 @@
-/* General Styles */
-body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f9f9f9;
-    color: #333;
-    direction: rtl;
-}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفوة الجود للمقاولات - متتبع المصروفات</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <img src="logo.png" alt="شعار صفوة الجود" class="logo">
+        <h1 id="صفوة-الجود-للمقاولات" class="business-name">صفوة الجود للمقاولات</h1>
+        <h2 id="متتبع-المصروفات" class="page-title">متتبع المصروفات</h2>
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
+        <main role="main">
+            <section id="loginSection" class="section">
+                <h3>تسجيل الدخول</h3>
+                <input type="text" id="username" placeholder="اسم المستخدم">
+                <button id="loginButton">دخول</button>
+            </section>
 
-.logo {
-    display: block;
-    margin: 0 auto;
-    max-width: 200px;
-}
+            <section id="dashboard" class="section hidden">
+                <h3>لوحة التحكم</h3>
+                <div id="projectsList"></div>
+                <button id="addProjectBtn">إضافة مشروع جديد</button>
+                <div id="projectForm" class="hidden">
+                    <input type="text" id="projectName" placeholder="اسم المشروع">
+                    <input type="text" id="projectUser" placeholder="اسم المستخدم">
+                    <select id="projectUserRole">
+                        <option value="collaborator">متعاون</option>
+                        <option value="viewer">مراقب</option>
+                    </select>
+                    <button id="saveProjectBtn">حفظ المشروع</button>
+                </div>
+            </section>
 
-.business-name {
-    text-align: center;
-    font-size: 24px;
-    margin: 20px 0;
-    color: #b68f60;
-}
+            <section id="projectPage" class="section hidden">
+                <h3 id="projectTitle"></h3>
+                <div id="expensesList" class="table-responsive">
+                    <table id="expenseTable">
+                        <thead>
+                            <tr>
+                                <th>الوصف</th>
+                                <th>المبلغ</th>
+                                <th>النوع</th>
+                                <th>التاريخ</th>
+                                <th>طريقة الدفع</th>
+                                <th>أضيف بواسطة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="summary">
+                    <div id="totals"></div>
+                    <div id="remaining"></div>
+                </div>
+                <div class="button-group">
+                    <button id="addExpenseBtn">أضف قيد</button>
+                    <button id="addUserBtn">إضافة مستخدم للمشروع</button>
+                    <button id="exportBtn">تصدير تقرير القيود</button>
+                    <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
+                </div>
+                <div id="expenseForm" class="hidden">
+                    <input type="text" id="expenseDescription" placeholder="الوصف">
+                    <input type="number" id="expenseAmount" placeholder="المبلغ">
+                    <select id="expenseType">
+                        <option value="expense">مصروف</option>
+                        <option value="deposit">إيداع</option>
+                    </select>
+                    <input type="date" id="expenseDate">
+                    <select id="paymentMethod">
+                        <option value="cash">كاش</option>
+                        <option value="visa">فيزا</option>
+                        <option value="bank">حوالة بنكية</option>
+                    </select>
+                    <button id="saveExpenseBtn">حفظ القيد</button>
+                </div>
+                <div id="addUserForm" class="hidden">
+                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم">
+                    <select id="newProjectUserRole">
+                        <option value="collaborator">متعاون</option>
+                        <option value="viewer">مراقب</option>
+                    </select>
+                    <button id="addNewUserBtn">إضافة المستخدم</button>
+                </div>
+            </section>
 
-.page-title {
-    text-align: center;
-    font-size: 20px;
-    margin: 10px 0;
-}
+            <div id="activityLogContainer" class="hidden"></div>
+        </main>
+    </div>
 
-.section {
-    margin: 20px 0;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+    <button id="logoutBtn" class="logout-btn hidden">تسجيل الخروج</button>
 
-/* Form Styles */
-input[type="text"],
-input[type="number"],
-input[type="date"],
-select,
-button {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-    box-sizing: border-box;
-}
+    <div id="loadingIndicator" class="hidden">جاري التحميل...</div>
 
-button {
-    background-color: #b68f60;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #a37a48;
-}
-
-/* Logout Button */
-.logout-btn {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background-color: #c94c4c;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.logout-btn:hover {
-    background-color: #b73737;
-}
-
-/* Utility Classes */
-.hidden {
-    display: none;
-}
-
-/* Project Summary */
-#summary {
-    margin: 20px 0;
-    font-size: 16px;
-    text-align: center;
-}
-
-#summary div {
-    margin: 5px 0;
-}
-
-#totals {
-    color: #007bff;
-}
-
-#remaining {
-    color: #28a745;
-}
-
-/* Expense Table */
-.table-responsive {
-    overflow-x: auto;
-}
-
-#expenseTable {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: right;
-    font-size: 14px;
-}
-
-#expenseTable th,
-#expenseTable td {
-    padding: 12px;
-    border: 1px solid #ddd;
-}
-
-#expenseTable th {
-    background-color: #f4f4f4;
-    font-weight: bold;
-}
-
-#expenseTable tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-#expenseTable tr:hover {
-    background-color: #f5f5f5;
-}
-
-/* Amount Styling */
-.negative-amount {
-    color: #dc3545;
-    font-weight: bold;
-}
-
-.positive-amount {
-    color: #28a745;
-}
-
-/* Button Group */
-.button-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.button-group button {
-    flex: 1;
-    min-width: 150px;
-}
-
-/* Project Blocks */
-.project-block {
-    background-color: #fff;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.project-block h4 {
-    font-size: 18px;
-    margin-bottom: 10px;
-}
-
-.project-block p {
-    font-size: 14px;
-    margin-bottom: 10px;
-}
-
-.project-block button {
-    display: inline-block;
-    width: auto;
-    margin-right: 10px;
-}
-
-/* Loading Indicator */
-#loadingIndicator {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 20px;
-    border-radius: 5px;
-    z-index: 1000;
-}
-
-/* Export Button */
-.export-btn {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.export-btn:hover {
-    background-color: #45a049;
-}
-
-/* Activity Log */
-#activityLogContainer {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-top: 20px;
-}
-
-#activityLogContainer h2 {
-    margin-bottom: 15px;
-}
-
-#activityLogContainer ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-#activityLogContainer li {
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f9f9f9;
-    border-radius: 3px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    select,
-    button {
-        font-size: 14px;
-        padding: 8px;
-    }
-
-    #expenseTable {
-        font-size: 12px;
-    }
-
-    #expenseTable th,
-    #expenseTable td {
-        padding: 8px;
-    }
-
-    .button-group button {
-        min-width: 100px;
-    }
-
-    #summary {
-        font-size: 14px;
-    }
-}
-
-/* Error Styling */
-.error {
-    border: 1px solid #dc3545;
-}
-
-.error-message {
-    color: #dc3545;
-    font-size: 0.8em;
-    margin-top: 5px;
-}
-
-/* Search Input Styling */
-#projectSearch {
-    margin-bottom: 20px;
-}
-
-/* Sorting Buttons */
-.sort-btn {
-    background-color: transparent;
-    border: none;
-    color: #333;
-    cursor: pointer;
-    padding: 0 5px;
-}
-
-.sort-btn:hover {
-    color: #007bff;
-}
-
-/* Pagination Styling */
-#pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-#pagination button {
-    margin: 0 5px;
-    padding: 5px 10px;
-    background-color: #f8f8f8;
-}
-
-#pagination button.active {
-    background-color: #007bff;
-    color: white;
-}
-
-/* Form visibility */
-#projectForm,
-#expenseForm,
-#addUserForm {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border-radius: 5px;
-    margin-top: 20px;
-}
-
-/* Add some spacing between form elements */
-#projectForm > *,
-#expenseForm > *,
-#addUserForm > * {
-    margin-bottom: 10px;
-}
+    <script type="module" src="script.js"></script>
+</body>
+</html>
