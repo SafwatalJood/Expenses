@@ -16,15 +16,15 @@
             <section id="loginSection" class="section">
                 <h3>تسجيل الدخول</h3>
                 <input type="text" id="username" placeholder="اسم المستخدم">
-                <button id="loginButton">دخول</button>
+                <button id="loginButton" onclick="handleLogin(event)">دخول</button>
             </section>
 
             <section id="dashboard" class="section hidden">
                 <h3>لوحة التحكم</h3>
                 <div id="projectsList"></div>
-                <button id="addProjectBtn">إضافة مشروع جديد</button>
+                <button id="addProjectBtn" onclick="showProjectForm()">إضافة مشروع جديد</button>
                 <div id="projectForm" class="hidden">
-                    <input type="text" id="projectName" placeholder="اسم المشروع">
+                    <input type="text" id="projectName" placeholder="اسم المشروع" required>
                     <input type="text" id="projectUser" placeholder="اسم المستخدم">
                     <select id="projectUserRole">
                         <option value="collaborator">متعاون</option>
@@ -57,19 +57,19 @@
                     <div id="remaining"></div>
                 </div>
                 <div class="button-group">
-                    <button id="addExpenseBtn">أضف قيد</button>
-                    <button id="addUserBtn">إضافة مستخدم للمشروع</button>
-                    <button id="exportBtn">تصدير تقرير القيود</button>
-                    <button id="backToDashboardBtn">العودة للوحة المشاريع</button>
+                    <button id="addExpenseBtn" onclick="showExpenseForm()">أضف قيد</button>
+                    <button id="addUserBtn" onclick="showAddUserForm()">إضافة مستخدم للمشروع</button>
+                    <button id="exportBtn" onclick="exportProjectExpenses(currentProjectId, document.getElementById('projectTitle').textContent)">تصدير تقرير القيود</button>
+                    <button id="backToDashboardBtn" onclick="showDashboard()">العودة للوحة المشاريع</button>
                 </div>
                 <div id="expenseForm" class="hidden">
-                    <input type="text" id="expenseDescription" placeholder="الوصف">
-                    <input type="number" id="expenseAmount" placeholder="المبلغ">
+                    <input type="text" id="expenseDescription" placeholder="الوصف" required>
+                    <input type="number" id="expenseAmount" placeholder="المبلغ" required>
                     <select id="expenseType">
                         <option value="expense">مصروف</option>
                         <option value="deposit">إيداع</option>
                     </select>
-                    <input type="date" id="expenseDate">
+                    <input type="date" id="expenseDate" required>
                     <select id="paymentMethod">
                         <option value="cash">كاش</option>
                         <option value="visa">فيزا</option>
@@ -78,12 +78,12 @@
                     <button id="saveExpenseBtn">حفظ القيد</button>
                 </div>
                 <div id="addUserForm" class="hidden">
-                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم">
+                    <input type="text" id="newProjectUser" placeholder="اسم المستخدم" required>
                     <select id="newProjectUserRole">
                         <option value="collaborator">متعاون</option>
                         <option value="viewer">مراقب</option>
                     </select>
-                    <button id="addNewUserBtn">إضافة المستخدم</button>
+                    <button id="addNewUserBtn" onclick="addUserToProject()">إضافة المستخدم</button>
                 </div>
             </section>
 
@@ -91,7 +91,7 @@
         </main>
     </div>
 
-    <button id="logoutBtn" class="logout-btn hidden">تسجيل الخروج</button>
+    <button id="logoutBtn" class="logout-btn hidden" onclick="handleLogout()">تسجيل الخروج</button>
 
     <div id="loadingIndicator" class="hidden">جاري التحميل...</div>
 
