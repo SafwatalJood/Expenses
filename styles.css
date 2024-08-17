@@ -280,6 +280,25 @@ button:hover {
     margin-top: 5px;
 }
 
+/* Error Container */
+.error-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: none;
+}
+
+.error-container.show {
+    display: block;
+}
+
 /* Search Input Styling */
 #projectSearch {
     margin-bottom: 20px;
