@@ -1,7 +1,7 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getDatabase, ref, push, set, get, update, remove, query, orderByChild, limitToFirst, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { getDatabase, ref, push, set, get, update, remove, query, orderByChild, equalTo, limitToFirst, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -60,7 +60,7 @@ window.showExpenseForm = showExpenseForm;
 window.saveExpense = saveExpense;
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;
-window.showProjectForm = showProjectForm; // Add this line
+window.showProjectForm = showProjectForm;
 window.saveProject = saveProject;
 window.editProject = editProject;
 window.deleteProject = deleteProject;
@@ -142,15 +142,23 @@ async function handleLogout() {
 
 async function findAndViewUserProject(userId) {
     try {
-        const projectsSnapshot = await get(query(ref(db, 'projects'), orderByChild('users'), limitToFirst(1)));
+        // Adjusted the query to correctly filter by user ID.
+        const userProjectsQuery = query(ref(db, 'projects'), orderByChild(`users/${userId}`), equalTo(true));
+        const projectsSnapshot = await get(userProjectsQuery);
+
         if (projectsSnapshot.exists()) {
-            const projectId = Object.keys(projectsSnapshot.val())[0];
-            viewProject(projectId);
+            const projects = projectsSnapshot.val();
+            const projectId = Object.keys(projects)[0]; // Get the first project ID for this user
+            if (projectId) {
+                viewProject(projectId);
+            } else {
+                throw new Error('لم يتم تعيين المستخدم لأي مشروع');
+            }
         } else {
-            throw new Error('لم يتم تعيين المستخدم لأي مشروع');
+            throw new Error('لا توجد مشاريع مرتبطة بالمستخدم');
         }
     } catch (error) {
-        handleFirebaseError(error);
+        handleFirebaseError(error, 'حدث خطأ أثناء محاولة تحميل المشروع المرتبط بالمستخدم');
         handleLogout();
     }
 }
