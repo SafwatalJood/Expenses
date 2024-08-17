@@ -67,6 +67,7 @@ window.deleteProject = deleteProject;
 window.viewProject = viewProject;
 window.addUserToProject = addUserToProject;
 window.exportProjectExpenses = exportProjectExpenses;
+window.viewActivityLog = viewActivityLog;
 
 // Initialize the application
 auth.onAuthStateChanged((user) => {
@@ -89,7 +90,9 @@ function showDashboard() {
     loginSection.classList.add('hidden');
     dashboard.classList.remove('hidden');
     projectPage.classList.add('hidden');
-    loadProjects();
+    if (currentUserRole === ROLES.ADMIN) {
+        loadProjects();
+    }
 }
 
 function showLoginForm() {
@@ -141,6 +144,8 @@ async function handleLogout() {
 }
 
 async function findAndViewUserProject(userId) {
+    if (currentUserRole === ROLES.ADMIN) return;  // Admin doesn't need to find specific projects
+
     try {
         const userProjectsQuery = query(ref(db, 'projects'), orderByChild(`users/${userId}`), equalTo(true));
         const projectsSnapshot = await get(userProjectsQuery);
@@ -234,7 +239,16 @@ function handleFirebaseError(error, customMessage = 'حدث خطأ') {
                 errorMessage = `Error code: ${error.code}`;
         }
     }
-    alert(errorMessage);
+    displayErrorMessage(errorMessage);
+}
+
+function displayErrorMessage(message) {
+    const errorContainer = document.getElementById('errorContainer');
+    errorContainer.textContent = message;
+    errorContainer.classList.add('show');
+    setTimeout(() => {
+        errorContainer.classList.remove('show');
+    }, 5000); // Hide after 5 seconds
 }
 
 async function logActivity(action, details) {
@@ -302,6 +316,10 @@ function createProjectElement(project) {
 }
 
 function showProjectForm() {
+    if (currentUserRole !== ROLES.ADMIN) {
+        displayErrorMessage('فقط المسؤول يمكنه إضافة مشاريع جديدة');
+        return;
+    }
     projectForm.classList.remove('hidden');
     document.getElementById('projectName').value = '';
     document.getElementById('projectUser').value = '';
