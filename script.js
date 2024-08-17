@@ -1,13 +1,13 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getDatabase, ref, push, set, get, update, remove, query, orderByChild, limitToFirst, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { getDatabase, ref, push, set, get, update, remove, query, orderByChild, limitToFirst, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDOkIghRKHFsP1WVbm_IzrnVjM2a0U62cs",
   authDomain: "expense-tracker-412b2.firebaseapp.com",
-  databaseURL: "https://expense-tracker-412b2-default-rtdb.firebaseio.com", // Make sure to add this line
+  databaseURL: "https://expense-tracker-412b2-default-rtdb.firebaseio.com",
   projectId: "expense-tracker-412b2",
   storageBucket: "expense-tracker-412b2.appspot.com",
   messagingSenderId: "802525395906",
@@ -25,8 +25,6 @@ let currentProjectId = '';
 let currentUserRole = '';
 let currentPage = 1;
 const itemsPerPage = 10;
-const cache = {};
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const ROLES = {
     ADMIN: 'admin',
@@ -34,82 +32,36 @@ const ROLES = {
     VIEWER: 'viewer'
 };
 
+// Hardcoded admin username
+const ADMIN_USERNAME = 'fah44944';
+
 // DOM Elements
 const loginSection = document.getElementById('loginSection');
 const dashboard = document.getElementById('dashboard');
 const logoutBtn = document.getElementById('logoutBtn');
-const projectsList = document.getElementById('projectsList');
-const addProjectBtn = document.getElementById('addProjectBtn');
-const projectForm = document.getElementById('projectForm');
-const saveProjectBtn = document.getElementById('saveProjectBtn');
-const projectPage = document.getElementById('projectPage');
-const expenseTableBody = document.querySelector('#expenseTable tbody');
-const expensesList = document.getElementById('expensesList');
-const addExpenseBtn = document.getElementById('addExpenseBtn');
-const expenseForm = document.getElementById('expenseForm');
-const saveExpenseBtn = document.getElementById('saveExpenseBtn');
-const backToDashboardBtn = document.getElementById('backToDashboardBtn');
-const addUserBtn = document.getElementById('addUserBtn');
-const addUserForm = document.getElementById('addUserForm');
-const saveNewUserBtn = document.getElementById('saveNewUserBtn');
-const totalsElement = document.getElementById('totals');
-const remainingElement = document.getElementById('remaining');
-const loadingIndicator = document.getElementById('loadingIndicator');
-const projectSearch = document.getElementById('projectSearch');
-const logContainer = document.getElementById('activityLogContainer');
+// ... (other DOM elements)
 
-// Make necessary functions globally accessible
 window.showDashboard = showDashboard;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
-window.showProjectForm = showProjectForm;
-window.saveProject = saveProject;
-window.showExpenseForm = showExpenseForm;
-window.saveExpense = saveExpense;
-window.showAddUserForm = showAddUserForm;
-window.addUserToProject = addUserToProject;
-window.handleProjectSearch = handleProjectSearch;
-window.viewActivityLog = viewActivityLog;
-window.editProject = editProject;
-window.deleteProject = deleteProject;
-window.viewProject = viewProject;
-window.exportProjectExpenses = exportProjectExpenses;
-window.editExpense = editExpense;
-window.deleteExpense = deleteExpense;
+// ... (other global functions)
 
 // Initialize the application
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
-        get(ref(db, `users/${user.uid}`)).then(snapshot => {
-            if (snapshot.exists()) {
-                currentUserRole = snapshot.val().role;
-                if (currentUserRole === ROLES.ADMIN) {
-                    showDashboard();
-                } else {
-                    findAndViewUserProject(user.uid);
-                }
-            }
-        });
+
+        // Hardcode the admin check
+        if (user.uid === ADMIN_USERNAME) {
+            currentUserRole = ROLES.ADMIN;
+            showDashboard();
+        } else {
+            findAndViewUserProject(user.uid);
+        }
     } else {
         showLoginForm();
     }
 });
-
-function showLoginForm() {
-    loginSection.classList.remove('hidden');
-    dashboard.classList.add('hidden');
-    projectPage.classList.add('hidden');
-}
-
-function showDashboard() {
-    loginSection.classList.add('hidden');
-    dashboard.classList.remove('hidden');
-    projectPage.classList.add('hidden');
-    loadProjects();
-}
-
-// Authentication and User Management
 
 async function handleLogin(e) {
     e.preventDefault();
@@ -120,18 +72,16 @@ async function handleLogin(e) {
         const userCredential = await signInAnonymously(auth);
         currentUser = userCredential.user;
 
-        const userSnapshot = await get(ref(db, `users/${username}`));
-        if (userSnapshot.exists()) {
-            currentUserRole = userSnapshot.val().role;
-            currentUser.displayName = username;
+        console.log('User credential:', userCredential);
 
-            if (currentUserRole === ROLES.ADMIN) {
-                showDashboard();
-            } else {
-                findAndViewUserProject(username);
-            }
+        // Hardcode the admin role check
+        if (username === ADMIN_USERNAME) {
+            currentUserRole = ROLES.ADMIN;
+            currentUser.displayName = username;
+            showDashboard();
         } else {
-            throw new Error('المستخدم غير موجود');
+            currentUserRole = ROLES.COLLABORATOR; // Assume other users are collaborators
+            findAndViewUserProject(username);
         }
     } catch (error) {
         handleFirebaseError(error, 'فشل تسجيل الدخول');
@@ -224,7 +174,7 @@ function hideLoading() {
 }
 
 function handleFirebaseError(error, customMessage = 'حدث خطأ') {
-    console.error(error);
+    console.error('Error during operation:', error);
     let errorMessage = customMessage;
     if (error.code) {
         switch (error.code) {
@@ -240,6 +190,8 @@ function handleFirebaseError(error, customMessage = 'حدث خطأ') {
             case 'permission-denied':
                 errorMessage = 'ليس لديك الصلاحية لإجراء هذه العملية.';
                 break;
+            default:
+                errorMessage = `Error code: ${error.code}`;
         }
     }
     alert(errorMessage);
