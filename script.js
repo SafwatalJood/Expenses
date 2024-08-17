@@ -35,7 +35,6 @@ const ROLES = {
 };
 
 // DOM Elements
-const loginForm = document.getElementById('loginForm');
 const loginSection = document.getElementById('loginSection');
 const dashboard = document.getElementById('dashboard');
 const logoutBtn = document.getElementById('logoutBtn');
@@ -78,26 +77,24 @@ window.exportProjectExpenses = exportProjectExpenses;
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;
 
-// Function definitions
-function initializeApp() {
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            currentUser = user;
-            get(ref(db, `users/${user.uid}`)).then(snapshot => {
-                if (snapshot.exists()) {
-                    currentUserRole = snapshot.val().role;
-                    if (currentUserRole === ROLES.ADMIN) {
-                        showDashboard();
-                    } else {
-                        findAndViewUserProject(user.uid);
-                    }
+// Initialize the application
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUser = user;
+        get(ref(db, `users/${user.uid}`)).then(snapshot => {
+            if (snapshot.exists()) {
+                currentUserRole = snapshot.val().role;
+                if (currentUserRole === ROLES.ADMIN) {
+                    showDashboard();
+                } else {
+                    findAndViewUserProject(user.uid);
                 }
-            });
-        } else {
-            showLoginForm();
-        }
-    });
-}
+            }
+        });
+    } else {
+        showLoginForm();
+    }
+});
 
 function showLoginForm() {
     loginSection.classList.remove('hidden');
@@ -288,8 +285,6 @@ async function loadProjects() {
             });
         }
 
-        // For pagination, you'd need to implement a custom solution or use server-side pagination
-        // as Realtime Database doesn't have a direct equivalent to Firestore's getCountFromServer
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل المشاريع');
     } finally {
@@ -480,7 +475,6 @@ async function loadExpenses(projectId) {
 
         updateProjectSummary(projectId);
 
-        // For pagination, you'd need to implement a custom solution
     } catch (error) {
         handleFirebaseError(error, 'فشل في تحميل القيود');
     } finally {
@@ -835,7 +829,3 @@ async function viewActivityLog() {
         hideLoading();
     }
 }
-
-// Initialize the application
-initializeApp();
-
