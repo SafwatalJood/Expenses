@@ -60,7 +60,7 @@ window.showExpenseForm = showExpenseForm;
 window.saveExpense = saveExpense;
 window.editExpense = editExpense;
 window.deleteExpense = deleteExpense;
-window.showProjectForm = showProjectForm;
+window.showProjectForm = showProjectForm; // Add this line
 window.saveProject = saveProject;
 window.editProject = editProject;
 window.deleteProject = deleteProject;
@@ -289,6 +289,14 @@ function createProjectElement(project) {
         <button onclick="exportProjectExpenses('${project.id}', '${project.name}')" class="export-btn">تصدير تقرير القيود</button>
     `;
     return projectElement;
+}
+
+function showProjectForm() {
+    projectForm.classList.remove('hidden');
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectUser').value = '';
+    document.getElementById('projectUserRole').value = 'collaborator';
+    saveProjectBtn.onclick = saveProject;
 }
 
 async function saveProject() {
