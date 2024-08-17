@@ -1,7 +1,7 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getDatabase, ref, push, set, get, update, remove, query, orderByChild, equalTo, limitToFirst, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { getDatabase, ref, push, set, get, update, remove, query, equalTo, limitToFirst, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -74,8 +74,8 @@ auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
 
-        // Hardcode the admin check
-        if (user.uid === ADMIN_USERNAME) {
+        // Hardcode the admin check using displayName
+        if (user.displayName === ADMIN_USERNAME) {
             currentUserRole = ROLES.ADMIN;
             showDashboard();
         } else {
@@ -104,6 +104,7 @@ function showLoginForm() {
 async function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('username').value;
+    console.log('Attempting login for username:', username);
 
     try {
         showLoading();
@@ -118,7 +119,8 @@ async function handleLogin(e) {
             currentUser.displayName = username;
             showDashboard();
         } else {
-            currentUserRole = ROLES.COLLABORATOR; // Assume other users are collaborators
+            console.log('Non-admin login, attempting to find user project');
+            currentUserRole = ROLES.COLLABORATOR;
             findAndViewUserProject(username);
         }
     } catch (error) {
@@ -144,10 +146,13 @@ async function handleLogout() {
 }
 
 async function findAndViewUserProject(userId) {
-    if (currentUserRole === ROLES.ADMIN) return;  // Admin doesn't need to find specific projects
+    if (currentUserRole === ROLES.ADMIN) {
+        showDashboard();
+        return;
+    }
 
     try {
-        const userProjectsQuery = query(ref(db, 'projects'), orderByChild(`users/${userId}`), equalTo(true));
+        const userProjectsQuery = query(ref(db, 'projects'), equalTo(true, `users/${userId}`));
         const projectsSnapshot = await get(userProjectsQuery);
 
         if (projectsSnapshot.exists()) {
@@ -167,116 +172,15 @@ async function findAndViewUserProject(userId) {
     }
 }
 
-async function addUserToProject() {
-    if (currentUserRole !== ROLES.ADMIN) {
-        alert('ليس لديك صلاحية لإضافة مستخدم للمشروع');
-        return;
-    }
-
-    const newUser = document.getElementById('newProjectUser').value;
-    const newUserRole = document.getElementById('newProjectUserRole').value;
-
-    if (!newUser) {
-        alert('الرجاء إدخال اسم المستخدم');
-        return;
-    }
-
-    try {
-        showLoading();
-        const projectSnapshot = await get(ref(db, `projects/${currentProjectId}`));
-        if (projectSnapshot.exists()) {
-            const project = projectSnapshot.val();
-            if (!project.users) {
-                project.users = [];
-            }
-            project.users.push(newUser);
-            await update(ref(db, `projects/${currentProjectId}`), { users: project.users });
-
-            await set(ref(db, `users/${newUser}`), { role: newUserRole });
-
-            addUserForm.classList.add('hidden');
-            alert('تمت إضافة المستخدم بنجاح');
-            loadProjects();
-            await logActivity('add_user', `Added user ${newUser} to project ${currentProjectId}`);
-        }
-    } catch (error) {
-        handleFirebaseError(error, 'فشل في إضافة المستخدم');
-    } finally {
-        hideLoading();
-    }
-}
-
-function showAddUserForm() {
-    addUserForm.classList.remove('hidden');
-}
-
-function showLoading() {
-    loadingIndicator.classList.remove('hidden');
-}
-
-function hideLoading() {
-    loadingIndicator.classList.add('hidden');
-}
-
-function handleFirebaseError(error, customMessage = 'حدث خطأ') {
-    console.error('Error during operation:', error);
-    let errorMessage = customMessage;
-    if (error.code) {
-        switch (error.code) {
-            case 'auth/user-not-found':
-                errorMessage = 'المستخدم غير موجود. يرجى التحقق من اسم المستخدم.';
-                break;
-            case 'auth/wrong-password':
-                errorMessage = 'كلمة المرور غير صحيحة. حاول مرة أخرى.';
-                break;
-            case 'auth/too-many-requests':
-                errorMessage = 'محاولات تسجيل دخول فاشلة كثيرة. يرجى المحاولة لاحقًا.';
-                break;
-            case 'permission-denied':
-                errorMessage = 'ليس لديك الصلاحية لإجراء هذه العملية.';
-                break;
-            default:
-                errorMessage = `Error code: ${error.code}`;
-        }
-    }
-    displayErrorMessage(errorMessage);
-}
-
-function displayErrorMessage(message) {
-    const errorContainer = document.getElementById('errorContainer');
-    errorContainer.textContent = message;
-    errorContainer.classList.add('show');
-    setTimeout(() => {
-        errorContainer.classList.remove('show');
-    }, 5000); // Hide after 5 seconds
-}
-
-async function logActivity(action, details) {
-    if (currentUserRole !== ROLES.ADMIN) return;
-
-    try {
-        const newLogRef = push(ref(db, 'activityLog'));
-        await set(newLogRef, {
-            timestamp: serverTimestamp(),
-            user: currentUser.displayName,
-            action: action,
-            details: details
-        });
-    } catch (error) {
-        console.error("Error adding activity log: ", error);
-    }
-}
-
-// Project Management Functions
-
 async function loadProjects() {
     if (currentUserRole !== ROLES.ADMIN) return;
 
+    console.log('Loading projects...');
     showLoading();
     projectsList.innerHTML = '';
 
     try {
-        const projectsSnapshot = await get(query(ref(db, 'projects'), orderByChild('name')));
+        const projectsSnapshot = await get(ref(db, 'projects'));
         if (projectsSnapshot.exists()) {
             const projects = [];
             projectsSnapshot.forEach((childSnapshot) => {
@@ -443,7 +347,7 @@ async function loadExpenses(projectId) {
     expenseTableBody.innerHTML = '';
 
     try {
-        const expensesSnapshot = await get(query(ref(db, `projects/${projectId}/expenses`), orderByChild('date'), limitToFirst(itemsPerPage)));
+        const expensesSnapshot = await get(query(ref(db, `projects/${projectId}/expenses`), limitToFirst(itemsPerPage)));
         const expenses = [];
         expensesSnapshot.forEach((childSnapshot) => {
             expenses.push({ id: childSnapshot.key, ...childSnapshot.val() });
@@ -804,7 +708,7 @@ async function viewActivityLog() {
 
     try {
         showLoading();
-        const logSnapshot = await get(query(ref(db, 'activityLog'), orderByChild('timestamp'), limitToFirst(100)));
+        const logSnapshot = await get(query(ref(db, 'activityLog'), limitToFirst(100)));
         let logHTML = '<h2>سجل النشاط</h2><ul>';
 
         logSnapshot.forEach(childSnapshot => {
