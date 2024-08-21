@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import Profile from "./components/Profile";
 import Home from "./components/Home";
