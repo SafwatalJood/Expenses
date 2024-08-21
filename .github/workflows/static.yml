@@ -20,10 +20,12 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run build
+      - name: List build output
+        run: ls -R dist  # or whatever your build output directory is
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: ./dist
+          path: ./dist  # or whatever directory your build outputs to
 
   deploy:
     environment:
