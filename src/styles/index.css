@@ -1,0 +1,82 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --primary-color: #b68f60;
+  --secondary-color: #a37a48;
+  --background-color: #f9f9f9;
+  --text-color: #333;
+  --negative-color: #dc3545;
+  --positive-color: #28a745;
+}
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  direction: rtl;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  color: var(--primary-color);
+}
+
+.btn {
+  @apply px-4 py-2 rounded font-semibold text-white transition-colors duration-300;
+}
+
+.btn-primary {
+  @apply bg-blue-500 hover:bg-blue-600;
+}
+
+.btn-danger {
+  @apply bg-red-500 hover:bg-red-600;
+}
+
+.input {
+  @apply w-full p-2 border rounded focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50;
+}
+
+.expense-table {
+  @apply w-full border-collapse;
+}
+
+.expense-table th,
+.expense-table td {
+  @apply border p-2 text-right;
+}
+
+.expense-table th {
+  @apply bg-gray-100;
+}
+
+.expense-table tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+.negative-amount {
+  @apply text-red-600 font-semibold;
+}
+
+.positive-amount {
+  @apply text-green-600 font-semibold;
+}
+
+/* Add padding to the bottom of the main content to account for the fixed bottom bar */
+.main-content {
+  padding-bottom: 80px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding: 10px;
+  }
+}
